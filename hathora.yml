@@ -1,0 +1,28 @@
+types:
+  Rotation:
+    - NONE
+    - LEFT
+    - RIGHT
+  Point2D:
+    x: float
+    y: float
+  PlayerShip:
+    player: UserId
+    location: Point2D
+    angle: float
+  GameState:
+    ships: PlayerShip[]
+
+methods:
+  joinGame:
+  updateRotation:
+    rotation: Rotation
+  updateAccelerating:
+    accelerating: boolean
+
+auth:
+  anonymous: {}
+
+userState: GameState
+error: string
+tick: 25
