@@ -69,7 +69,7 @@ export class GameScene extends Phaser.Scene {
     state.ships.forEach((ship) => {
       if (!this.players.has(ship.player)) {
         const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
-        sprite.setRotation(ship.angle + Math.PI * 0.75);
+        sprite.setRotation(ship.angle + Math.PI * 0.5);
         this.players.set(ship.player, sprite);
         this.add.existing(sprite);
         this.cameras.main.startFollow(sprite);
