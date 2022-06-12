@@ -1,3 +1,4 @@
+import { Response } from "../api/base";
 import {
   GameState,
   UserId,
@@ -6,7 +7,6 @@ import {
   PlayerShip,
   Rotation,
 } from "../api/types";
-import { Response } from "../api/base";
 
 import { Methods, Context } from "./.hathora/methods";
 
@@ -31,7 +31,7 @@ export class Impl implements Methods<InternalState> {
     }
     state.ships.push({
       player: userId,
-      location: { x: 0, y: 0 },
+      location: { x: 100, y: 1000 },
       angle: 0,
       rotation: Rotation.NONE,
       accelerating: false,
