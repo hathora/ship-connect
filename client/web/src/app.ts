@@ -69,7 +69,7 @@ export class GameScene extends Phaser.Scene {
     state.ships.forEach((ship) => {
       if (!this.players.has(ship.player)) {
         const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
-        sprite.setRotation(ship.angle + Math.PI * 0.5);
+        sprite.setRotation(ship.angle);
         this.players.set(ship.player, sprite);
         this.add.existing(sprite);
         this.cameras.main.startFollow(sprite);
@@ -77,7 +77,7 @@ export class GameScene extends Phaser.Scene {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const sprite = this.players.get(ship.player)!;
         sprite.setPosition(ship.location.x, ship.location.y);
-        sprite.setRotation(ship.angle + Math.PI * 0.5);
+        sprite.setRotation(ship.angle);
       }
     });
   }
