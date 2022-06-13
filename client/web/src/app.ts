@@ -50,17 +50,21 @@ export class GameScene extends Phaser.Scene {
     this.scene.run("resize-scene");
 
     let prevDragLoc = { x: -1, y: -1 };
-    this.input.on("pointermove", (pointer) => {
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
       if (pointer.isDown) {
-        const { x, y } = pointer;
+        const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
+        const { x, y } = p;
+
         if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
           this.connection?.thrustTowards({ location: { x, y } });
         }
         prevDragLoc = { x, y };
       }
     });
-    this.input.on("pointerdown", (pointer) => {
-      const { x, y } = pointer;
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
+      const { x, y } = p;
+      console.log(p);
       if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
         this.connection?.thrustTowards({ location: { x, y } });
       }
@@ -91,7 +95,7 @@ export class GameScene extends Phaser.Scene {
     if (this.shipSprite === undefined) {
       this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.x, ship.y, "ship");
       this.shipSprite.setScale(0.5, 0.5);
-      this.add.existing(this.shipSprite);
+      this.addChild(this.shipSprite);
     }
     const dx = ship.x - this.shipSprite.x;
     const dy = ship.y - this.shipSprite.y;
