@@ -88,8 +88,8 @@ export class GameScene extends Phaser.Scene {
 
 new Phaser.Game({
   type: Phaser.AUTO,
-  width: 350,
-  height: 600,
+  width: 400,
+  height: 800,
   scene: [GameScene],
   parent: "root",
   dom: { createContainer: true },
