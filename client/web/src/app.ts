@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 
-import { UserId } from "../../../api/types";
 import { SafeArea } from "../../../server/shared/consts";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
@@ -9,14 +8,11 @@ import shipUrl from "../assets/ship.png";
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
 import { DebugScene } from "./DebugScene";
 import { Event, eventsCenter } from "./events";
-import { createKeyboardInput } from "./input";
 import { ResizeScene } from "./ResizeScene";
 
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
-  private players: Map<UserId, Phaser.GameObjects.Sprite> = new Map();
-
-  private keyboardInput?: ReturnType<typeof createKeyboardInput>;
+  private shipSprite: Phaser.GameObjects.Sprite | undefined;
 
   private safeContainer!: Phaser.GameObjects.Container;
 
@@ -26,7 +22,7 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image("background", backgroundUrl);
-    this.load.image("player", shipUrl);
+    this.load.image("ship", shipUrl);
   }
 
   init() {
@@ -36,19 +32,8 @@ export class GameScene extends Phaser.Scene {
         client.connect(token, stateId).then((connection) => {
           this.connection = connection;
           connection.joinGame({});
-
-          this.keyboardInput = createKeyboardInput(this, connection);
         });
       });
-    });
-
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.keyboardInput?.dispose();
-      eventsCenter.off(Event.Resized, this.handleResized);
-    });
-
-    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
-      eventsCenter.removeAllListeners();
     });
   }
 
@@ -63,6 +48,36 @@ export class GameScene extends Phaser.Scene {
 
     this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
+
+    let prevDragLoc = { x: -1, y: -1 };
+    this.input.on("pointermove", (pointer) => {
+      if (pointer.isDown) {
+        const { x, y } = pointer;
+        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+          this.connection?.thrustTowards({ location: { x, y } });
+        }
+        prevDragLoc = { x, y };
+      }
+    });
+    this.input.on("pointerdown", (pointer) => {
+      const { x, y } = pointer;
+      if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+        this.connection?.thrustTowards({ location: { x, y } });
+      }
+      prevDragLoc = { x, y };
+    });
+    this.input.on("pointerup", () => {
+      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+        this.connection?.stopThrusting({});
+        prevDragLoc = { x: -1, y: -1 };
+      }
+    });
+    this.input.on("gameout", () => {
+      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+        this.connection?.stopThrusting({});
+        prevDragLoc = { x: -1, y: -1 };
+      }
+    });
   }
 
   update(): void {
@@ -71,24 +86,19 @@ export class GameScene extends Phaser.Scene {
     }
 
     const { state } = this.connection;
+    const { playerShip: ship } = state;
 
-    // process key input on update
-    this.keyboardInput?.update();
-
-    state.ships.forEach((ship) => {
-      if (!this.players.has(ship.player)) {
-        const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
-        sprite.setRotation(ship.angle);
-        sprite.setScale(0.5, 0.5);
-        this.players.set(ship.player, sprite);
-        this.addChild(sprite);
-      } else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const sprite = this.players.get(ship.player)!;
-        sprite.setPosition(ship.location.x, ship.location.y);
-        sprite.setRotation(ship.angle);
-      }
-    });
+    if (this.shipSprite === undefined) {
+      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.x, ship.y, "ship");
+      this.shipSprite.setScale(0.5, 0.5);
+      this.add.existing(this.shipSprite);
+    }
+    const dx = ship.x - this.shipSprite.x;
+    const dy = ship.y - this.shipSprite.y;
+    if (dx !== 0 || dy !== 0) {
+      this.shipSprite.setRotation(Math.atan2(dy, dx));
+    }
+    this.shipSprite.setPosition(ship.x, ship.y);
   }
 
   private addChild(go: Phaser.GameObjects.GameObject) {
