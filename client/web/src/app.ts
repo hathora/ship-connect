@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 
+import { Projectile } from "../../../api/types";
 import { SafeArea } from "../../../shared/consts";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
@@ -10,6 +11,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
 import { DebugScene } from "./DebugScene";
 import { Event, eventsCenter } from "./events";
 import { ResizeScene } from "./ResizeScene";
+import { syncSprites } from "./utils";
 
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
@@ -109,31 +111,22 @@ export class GameScene extends Phaser.Scene {
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
 
-    const seenProjectileIds: Set<number> = new Set();
-    state.projectiles.forEach((projectile) => {
-      seenProjectileIds.add(projectile.id);
-      if (!this.projectileSprites.has(projectile.id)) {
-        const projectileSprite = new Phaser.GameObjects.Sprite(
-          this,
-          projectile.location.x,
-          projectile.location.y,
-          "laser"
-        );
-        projectileSprite.setScale(0.5, 0.5);
-        this.projectileSprites.set(projectile.id, projectileSprite);
-        this.addChild(projectileSprite);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const projectileSprite = this.projectileSprites.get(projectile.id)!;
-      projectileSprite.setRotation(projectile.angle);
-      projectileSprite.setPosition(projectile.location.x, projectile.location.y);
-    });
-    this.projectileSprites.forEach((projectile, projectileId) => {
-      if (!seenProjectileIds.has(projectileId)) {
-        this.projectileSprites.delete(projectileId);
-        projectile.destroy();
-      }
-    });
+    const serverSprites = state.projectiles.reduce(
+      (map, projectile) => map.set(projectile.id, projectile),
+      new Map<number, Projectile>()
+    );
+    syncSprites(
+      this.projectileSprites,
+      serverSprites,
+      (projectile) => {
+        const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
+        sprite.setScale(0.5, 0.5);
+        this.addChild(sprite);
+        return sprite;
+      },
+      (projectileSprite, projectile) =>
+        projectileSprite.setRotation(projectile.angle).setPosition(projectile.location.x, projectile.location.y)
+    );
   }
 
   private addChild(go: Phaser.GameObjects.GameObject) {
