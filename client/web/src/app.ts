@@ -34,8 +34,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBounds(0, 0, 8000, 6000);
-    this.add.tileSprite(0, 0, 8000, 8000, "background").setOrigin(0, 0);
+    this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, "background").setOrigin(0, 0);
 
     const keysDown: Set<string> = new Set();
     const processInput = () => {
@@ -73,9 +72,9 @@ export class GameScene extends Phaser.Scene {
       if (!this.players.has(ship.player)) {
         const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
         sprite.setRotation(ship.angle);
+        sprite.setScale(0.5, 0.5);
         this.players.set(ship.player, sprite);
         this.add.existing(sprite);
-        this.cameras.main.startFollow(sprite);
       } else {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const sprite = this.players.get(ship.player)!;

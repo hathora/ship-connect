@@ -31,7 +31,7 @@ export class Impl implements Methods<InternalState> {
     }
     state.ships.push({
       player: userId,
-      location: { x: 100, y: 1000 },
+      location: { x: 100, y: 100 },
       angle: 0,
       rotation: Rotation.NONE,
       accelerating: false,
