@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 
-import { Projectile } from "../../../api/types";
 import { SafeArea } from "../../../shared/consts";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
@@ -41,13 +40,8 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      eventsCenter.off(Event.Resized, this.handleResized);
-    });
-
-    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
-      eventsCenter.removeAllListeners();
-    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => eventsCenter.off(Event.Resized, this.handleResized));
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => eventsCenter.removeAllListeners());
   }
 
   create() {
@@ -99,29 +93,23 @@ export class GameScene extends Phaser.Scene {
     if (this.connection === undefined) {
       return;
     }
-
-    const { state } = this.connection;
-    const { playerShip: ship } = state;
+    const { playerShip: ship, projectiles } = this.connection.state;
 
     if (this.shipSprite === undefined) {
       this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
       this.shipSprite.setScale(0.5, 0.5);
-      this.addChild(this.shipSprite);
+      this.safeContainer.add(this.shipSprite);
     }
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
 
-    const serverSprites = state.projectiles.reduce(
-      (map, projectile) => map.set(projectile.id, projectile),
-      new Map<number, Projectile>()
-    );
     syncSprites(
       this.projectileSprites,
-      serverSprites,
+      new Map(projectiles.map((projectile) => [projectile.id, projectile])),
       (projectile) => {
         const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
         sprite.setScale(0.5, 0.5);
-        this.addChild(sprite);
+        this.safeContainer.add(sprite);
         return sprite;
       },
       (projectileSprite, projectile) =>
@@ -129,19 +117,7 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  private addChild(go: Phaser.GameObjects.GameObject) {
-    if (this.safeContainer) {
-      this.safeContainer.add(go);
-    } else {
-      this.add.existing(go);
-    }
-  }
-
   private positionSafeContainer() {
-    if (!this.safeContainer) {
-      return;
-    }
-
     const { width, height } = this.scale;
     const x = (width - SafeArea.width) * 0.5;
     const y = (height - SafeArea.height) * 0.5;
@@ -151,7 +127,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleResized = () => {
-    this.positionSafeContainer();
+    if (this.safeContainer !== undefined) {
+      this.positionSafeContainer();
+    }
   };
 }
 
@@ -162,7 +140,5 @@ new Phaser.Game({
   scene: [GameScene, ResizeScene, DebugScene],
   parent: "root",
   dom: { createContainer: true },
-  scale: {
-    mode: Phaser.Scale.ScaleModes.NONE,
-  },
+  scale: { mode: Phaser.Scale.ScaleModes.NONE },
 });
