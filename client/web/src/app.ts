@@ -1,16 +1,19 @@
 import Phaser from "phaser";
 
-import { Rotation, UserId } from "../../../api/types";
+import { UserId } from "../../../api/types";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
 import shipUrl from "../assets/ship.png";
 
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
+import { createKeyboardInput } from "./input";
 import { ResizeScene } from "./ResizeScene";
 
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
   private players: Map<UserId, Phaser.GameObjects.Sprite> = new Map();
+
+  private keyboardInput?: ReturnType<typeof createKeyboardInput>;
 
   constructor() {
     super("game");
@@ -28,38 +31,20 @@ export class GameScene extends Phaser.Scene {
         client.connect(token, stateId).then((connection) => {
           this.connection = connection;
           connection.joinGame({});
+
+          this.keyboardInput = createKeyboardInput(this, connection);
         });
       });
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.keyboardInput?.dispose();
     });
   }
 
   create() {
     this.cameras.main.setBounds(0, 0, 8000, 6000);
     this.add.tileSprite(0, 0, 8000, 8000, "background").setOrigin(0, 0);
-
-    const keysDown: Set<string> = new Set();
-    const processInput = () => {
-      if (keysDown.has("ArrowUp")) {
-        this.connection?.updateAccelerating({ accelerating: true });
-      } else {
-        this.connection?.updateAccelerating({ accelerating: false });
-      }
-      if (keysDown.has("ArrowLeft")) {
-        this.connection?.updateRotation({ rotation: Rotation.LEFT });
-      } else if (keysDown.has("ArrowRight")) {
-        this.connection?.updateRotation({ rotation: Rotation.RIGHT });
-      } else {
-        this.connection?.updateRotation({ rotation: Rotation.NONE });
-      }
-    };
-    this.input.keyboard.on("keydown", (e: KeyboardEvent) => {
-      keysDown.add(e.key);
-      processInput();
-    });
-    this.input.keyboard.on("keyup", (e: KeyboardEvent) => {
-      keysDown.delete(e.key);
-      processInput();
-    });
   }
 
   update(): void {
@@ -68,6 +53,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     const { state } = this.connection;
+
+    // process key input on update
+    this.keyboardInput?.update();
 
     state.ships.forEach((ship) => {
       if (!this.players.has(ship.player)) {
