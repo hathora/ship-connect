@@ -12,12 +12,18 @@ type InternalState = {
   fireCooldown: number;
 };
 
+const PROJECTILE_COOLDOWN = 1; // second
 const SHIP_SPEED = 100; // pixels per second
 const PROJECTILE_SPEED = 500; // pixels per second
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
-    return { players: [], projectiles: [], playerShip: { location: { x: 100, y: 100 }, angle: 0 }, fireCooldown: 5 };
+    return {
+      players: [],
+      projectiles: [],
+      playerShip: { location: { x: 100, y: 100 }, angle: 0 },
+      fireCooldown: PROJECTILE_COOLDOWN,
+    };
   }
   joinGame(state: InternalState, userId: UserId): Response {
     if (state.players.some((player) => player === userId)) {
@@ -71,9 +77,9 @@ export class Impl implements Methods<InternalState> {
       }
     });
 
-    state.fireCooldown - timeDelta;
+    state.fireCooldown -= timeDelta;
     if (state.fireCooldown < 0) {
-      state.fireCooldown = 5 + state.fireCooldown;
+      state.fireCooldown = PROJECTILE_COOLDOWN + state.fireCooldown;
       state.projectiles.push({
         id: ctx.chance.natural({ max: 1e6 }),
         location: { ...ship.location },
