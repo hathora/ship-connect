@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-import { SafeArea } from "../../../server/shared/consts";
+import { SafeArea } from "../../../shared/consts";
 
 import { eventsCenter, Event } from "./events";
 

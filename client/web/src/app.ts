@@ -1,8 +1,9 @@
 import Phaser from "phaser";
 
-import { SafeArea } from "../../../server/shared/consts";
+import { SafeArea } from "../../../shared/consts";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
+import laserUrl from "../assets/laser.png";
 import shipUrl from "../assets/ship.png";
 
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
@@ -13,6 +14,7 @@ import { ResizeScene } from "./ResizeScene";
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
   private shipSprite: Phaser.GameObjects.Sprite | undefined;
+  private projectileSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
 
@@ -22,6 +24,7 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image("background", backgroundUrl);
+    this.load.image("laser", laserUrl);
     this.load.image("ship", shipUrl);
   }
 
@@ -62,7 +65,6 @@ export class GameScene extends Phaser.Scene {
       if (pointer.isDown) {
         const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
         const { x, y } = p;
-
         if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
           this.connection?.thrustTowards({ location: { x, y } });
         }
@@ -72,7 +74,6 @@ export class GameScene extends Phaser.Scene {
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
       const { x, y } = p;
-      console.log(p);
       if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
         this.connection?.thrustTowards({ location: { x, y } });
       }
@@ -101,16 +102,38 @@ export class GameScene extends Phaser.Scene {
     const { playerShip: ship } = state;
 
     if (this.shipSprite === undefined) {
-      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.x, ship.y, "ship");
+      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
       this.shipSprite.setScale(0.5, 0.5);
       this.addChild(this.shipSprite);
     }
-    const dx = ship.x - this.shipSprite.x;
-    const dy = ship.y - this.shipSprite.y;
-    if (dx !== 0 || dy !== 0) {
-      this.shipSprite.setRotation(Math.atan2(dy, dx));
-    }
-    this.shipSprite.setPosition(ship.x, ship.y);
+    this.shipSprite.setRotation(ship.angle);
+    this.shipSprite.setPosition(ship.location.x, ship.location.y);
+
+    const seenProjectileIds: Set<number> = new Set();
+    state.projectiles.forEach((projectile) => {
+      seenProjectileIds.add(projectile.id);
+      if (!this.projectileSprites.has(projectile.id)) {
+        const projectileSprite = new Phaser.GameObjects.Sprite(
+          this,
+          projectile.location.x,
+          projectile.location.y,
+          "laser"
+        );
+        projectileSprite.setScale(0.5, 0.5);
+        this.projectileSprites.set(projectile.id, projectileSprite);
+        this.addChild(projectileSprite);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const projectileSprite = this.projectileSprites.get(projectile.id)!;
+      projectileSprite.setRotation(projectile.angle);
+      projectileSprite.setPosition(projectile.location.x, projectile.location.y);
+    });
+    this.projectileSprites.forEach((projectile, projectileId) => {
+      if (!seenProjectileIds.has(projectileId)) {
+        this.projectileSprites.delete(projectileId);
+        projectile.destroy();
+      }
+    });
   }
 
   private addChild(go: Phaser.GameObjects.GameObject) {
