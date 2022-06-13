@@ -1,4 +1,4 @@
 export const SafeArea = {
-  width: 400,
-  height: 600,
+  width: 375,
+  height: 500,
 };
