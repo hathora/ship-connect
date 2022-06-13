@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 
-import { UserId } from "../../../api/types";
 import { SafeArea } from "../../../server/shared/consts";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
@@ -14,7 +13,7 @@ import { ResizeScene } from "./ResizeScene";
 
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
-  private players: Map<UserId, Phaser.GameObjects.Sprite> = new Map();
+  private shipSprite: Phaser.GameObjects.Sprite | undefined;
 
   private keyboardInput?: ReturnType<typeof createKeyboardInput>;
 
@@ -26,7 +25,7 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image("background", backgroundUrl);
-    this.load.image("player", shipUrl);
+    this.load.image("ship", shipUrl);
   }
 
   init() {
@@ -63,6 +62,36 @@ export class GameScene extends Phaser.Scene {
 
     this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
+
+    let prevDragLoc = { x: -1, y: -1 };
+    this.input.on("pointermove", (pointer) => {
+      if (pointer.isDown) {
+        const { x, y } = pointer;
+        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+          this.connection?.thrustTowards({ location: { x, y } });
+        }
+        prevDragLoc = { x, y };
+      }
+    });
+    this.input.on("pointerdown", (pointer) => {
+      const { x, y } = pointer;
+      if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+        this.connection?.thrustTowards({ location: { x, y } });
+      }
+      prevDragLoc = { x, y };
+    });
+    this.input.on("pointerup", () => {
+      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+        this.connection?.stopThrusting({});
+        prevDragLoc = { x: -1, y: -1 };
+      }
+    });
+    this.input.on("gameout", () => {
+      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+        this.connection?.stopThrusting({});
+        prevDragLoc = { x: -1, y: -1 };
+      }
+    });
   }
 
   update(): void {
@@ -71,24 +100,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     const { state } = this.connection;
+    const { playerShip: ship } = state;
 
-    // process key input on update
-    this.keyboardInput?.update();
-
-    state.ships.forEach((ship) => {
-      if (!this.players.has(ship.player)) {
-        const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
-        sprite.setRotation(ship.angle);
-        sprite.setScale(0.5, 0.5);
-        this.players.set(ship.player, sprite);
-        this.addChild(sprite);
-      } else {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const sprite = this.players.get(ship.player)!;
-        sprite.setPosition(ship.location.x, ship.location.y);
-        sprite.setRotation(ship.angle);
-      }
-    });
+    if (this.shipSprite === undefined) {
+      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
+      this.shipSprite.setScale(0.5, 0.5);
+      this.add.existing(this.shipSprite);
+    }
+    this.shipSprite.setPosition(ship.location.x, ship.location.y);
+    this.shipSprite.setRotation(ship.angle);
   }
 
   private addChild(go: Phaser.GameObjects.GameObject) {
