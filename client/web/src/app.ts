@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-import { SafeArea } from "../../../server/shared/consts";
+import { SafeArea } from "../../../shared/consts";
 import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
 import shipUrl from "../assets/ship.png";
@@ -54,7 +54,6 @@ export class GameScene extends Phaser.Scene {
       if (pointer.isDown) {
         const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
         const { x, y } = p;
-
         if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
           this.connection?.thrustTowards({ location: { x, y } });
         }
@@ -64,7 +63,6 @@ export class GameScene extends Phaser.Scene {
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
       const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
       const { x, y } = p;
-      console.log(p);
       if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
         this.connection?.thrustTowards({ location: { x, y } });
       }

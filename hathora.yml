@@ -5,6 +5,7 @@ types:
   GameState:
     players: UserId[]
     playerShip: Point2D
+    projectiles: Point2D[]
 
 methods:
   joinGame:
