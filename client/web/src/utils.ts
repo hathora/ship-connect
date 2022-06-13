@@ -6,16 +6,16 @@ export function syncSprites<T>(
   onNew: (serverSprite: T) => Phaser.GameObjects.Sprite,
   onUpdate: (clientSprite: Phaser.GameObjects.Sprite, serverSprite: T) => void
 ) {
-  clientSprites.forEach((sprite, id) => {
+  clientSprites.forEach((clientSprite, id) => {
     const serverSprite = serverSprites.get(id);
     serverSprites.delete(id);
     if (serverSprite === undefined) {
       // sprite deleted on server
-      sprite.destroy();
+      clientSprite.destroy();
       clientSprites.delete(id);
     } else {
       // sprite updated on server
-      onUpdate(sprite, serverSprite);
+      onUpdate(clientSprite, serverSprite);
     }
   });
   serverSprites.forEach((serverSprite, id) => {
