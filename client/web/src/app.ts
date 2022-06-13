@@ -5,6 +5,9 @@ import { HathoraClient, HathoraConnection } from "../../.hathora/client";
 import backgroundUrl from "../assets/background.png";
 import shipUrl from "../assets/ship.png";
 
+import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
+import { ResizeScene } from "./ResizeScene";
+
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
   private players: Map<UserId, Phaser.GameObjects.Sprite> = new Map();
@@ -83,11 +86,16 @@ export class GameScene extends Phaser.Scene {
   }
 }
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  scene: [GameScene],
+  width: GAME_WIDTH,
+  height: GAME_HEIGHT,
+  scene: [GameScene, ResizeScene],
   parent: "root",
   dom: { createContainer: true },
+  scale: {
+    mode: Phaser.Scale.ScaleModes.NONE,
+  },
 });
+
+game.scene.start("resize-scene");
