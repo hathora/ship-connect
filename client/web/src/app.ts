@@ -89,12 +89,16 @@ export class GameScene extends Phaser.Scene {
     const { playerShip: ship } = state;
 
     if (this.shipSprite === undefined) {
-      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
+      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.x, ship.y, "ship");
       this.shipSprite.setScale(0.5, 0.5);
       this.add.existing(this.shipSprite);
     }
-    this.shipSprite.setPosition(ship.location.x, ship.location.y);
-    this.shipSprite.setRotation(ship.angle);
+    const dx = ship.x - this.shipSprite.x;
+    const dy = ship.y - this.shipSprite.y;
+    if (dx !== 0 || dy !== 0) {
+      this.shipSprite.setRotation(Math.atan2(dy, dx));
+    }
+    this.shipSprite.setPosition(ship.x, ship.y);
   }
 
   private addChild(go: Phaser.GameObjects.GameObject) {

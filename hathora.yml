@@ -2,12 +2,9 @@ types:
   Point2D:
     x: float
     y: float
-  PlayerShip:
-    location: Point2D
-    angle: float
   GameState:
     players: UserId[]
-    playerShip: PlayerShip
+    playerShip: Point2D
 
 methods:
   joinGame:

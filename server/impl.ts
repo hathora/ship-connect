@@ -1,19 +1,18 @@
 import { Response } from "../api/base";
-import { GameState, UserId, PlayerShip, Point2D, IStopThrustingRequest, IThrustTowardsRequest } from "../api/types";
+import { GameState, UserId, Point2D, IStopThrustingRequest, IThrustTowardsRequest } from "../api/types";
 
 import { Methods, Context } from "./.hathora/methods";
 
 type InternalState = {
   players: UserId[];
-  playerShip: PlayerShip & { target?: Point2D };
+  playerShip: Point2D & { target?: Point2D };
 };
 
-const SHIP_ROTATION_SPEED = 0.01; // radians per second
 const SHIP_SPEED = 100; // pixels per second
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
-    return { players: [], playerShip: { location: { x: 100, y: 100 }, angle: 0 } };
+    return { players: [], playerShip: { x: 100, y: 100 } };
   }
   joinGame(state: InternalState, userId: UserId): Response {
     if (state.players.some((player) => player === userId)) {
@@ -41,16 +40,17 @@ export class Impl implements Methods<InternalState> {
     if (ship.target === undefined) {
       return;
     }
-    const dx = ship.target.x - ship.location.x;
-    const dy = ship.target.y - ship.location.y;
+    const dx = ship.target.x - ship.x;
+    const dy = ship.target.y - ship.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const pixelsToMove = SHIP_SPEED * timeDelta;
     if (dist <= pixelsToMove) {
-      ship.location = ship.target;
+      ship.x = ship.target.x;
+      ship.y = ship.target.y;
       ship.target = undefined;
     } else {
-      ship.location.x += (dx / dist) * pixelsToMove;
-      ship.location.y += (dy / dist) * pixelsToMove;
+      ship.x += (dx / dist) * pixelsToMove;
+      ship.y += (dy / dist) * pixelsToMove;
     }
   }
   getUserState(state: InternalState): GameState {
