@@ -35,6 +35,14 @@ export class GameScene extends Phaser.Scene {
         });
       });
     });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      eventsCenter.off(Event.Resized, this.handleResized);
+    });
+
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+      eventsCenter.removeAllListeners();
+    });
   }
 
   create() {
