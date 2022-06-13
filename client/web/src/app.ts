@@ -19,20 +19,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   init() {
-    const client = new HathoraClient();
-    client.loginAnonymous().then((token) => {
-      client.create(token, {}).then((stateId) => {
-        client.connect(token, stateId).then((connection) => {
-          this.connection = connection;
-          connection.joinGame({});
-        });
-      });
-    });
+    // const client = new HathoraClient();
+    // client.loginAnonymous().then((token) => {
+    //   client.create(token, {}).then((stateId) => {
+    //     client.connect(token, stateId).then((connection) => {
+    //       this.connection = connection;
+    //       connection.joinGame({});
+    //     });
+    //   });
+    // });
   }
 
   create() {
     this.cameras.main.setBounds(0, 0, 8000, 6000);
     this.add.tileSprite(0, 0, 8000, 8000, "background").setOrigin(0, 0);
+
+    const sprite = new Phaser.GameObjects.Sprite(this, 100, 200, "player");
+    this.add.existing(sprite);
 
     const keysDown: Set<string> = new Set();
     const processInput = () => {
@@ -85,7 +88,7 @@ export class GameScene extends Phaser.Scene {
 
 new Phaser.Game({
   type: Phaser.AUTO,
-  width: 800,
+  width: 350,
   height: 600,
   scene: [GameScene],
   parent: "root",
