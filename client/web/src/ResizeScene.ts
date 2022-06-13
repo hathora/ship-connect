@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
+import { Event, eventsCenter } from "./events";
 
 export class ResizeScene extends Phaser.Scene {
   constructor() {
@@ -26,9 +27,10 @@ export class ResizeScene extends Phaser.Scene {
       if (width !== GAME_WIDTH || height !== GAME_HEIGHT) {
         this.scale.resize(GAME_WIDTH, GAME_HEIGHT);
       }
-      return;
+    } else {
+      this.scale.resize(windowWidth, windowHeight);
     }
 
-    this.scale.resize(windowWidth, windowHeight);
+    eventsCenter.emit(Event.Resized);
   };
 }
