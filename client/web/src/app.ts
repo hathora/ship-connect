@@ -8,14 +8,11 @@ import shipUrl from "../assets/ship.png";
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
 import { DebugScene } from "./DebugScene";
 import { Event, eventsCenter } from "./events";
-import { createKeyboardInput } from "./input";
 import { ResizeScene } from "./ResizeScene";
 
 export class GameScene extends Phaser.Scene {
   private connection: HathoraConnection | undefined;
   private shipSprite: Phaser.GameObjects.Sprite | undefined;
-
-  private keyboardInput?: ReturnType<typeof createKeyboardInput>;
 
   private safeContainer!: Phaser.GameObjects.Container;
 
@@ -35,19 +32,8 @@ export class GameScene extends Phaser.Scene {
         client.connect(token, stateId).then((connection) => {
           this.connection = connection;
           connection.joinGame({});
-
-          this.keyboardInput = createKeyboardInput(this, connection);
         });
       });
-    });
-
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.keyboardInput?.dispose();
-      eventsCenter.off(Event.Resized, this.handleResized);
-    });
-
-    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
-      eventsCenter.removeAllListeners();
     });
   }
 
