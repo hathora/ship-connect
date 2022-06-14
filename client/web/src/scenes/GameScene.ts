@@ -3,8 +3,9 @@ import InputText from "phaser3-rex-plugins/plugins/inputtext";
 import { SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
+import enemyUrl from "../../assets/enemy.png";
 import laserUrl from "../../assets/laser.png";
-import shipUrl from "../../assets/ship.png";
+import playerUrl from "../../assets/player.png";
 import { GAME_WIDTH, GAME_HEIGHT } from "../consts";
 import { Event, eventsCenter } from "../events";
 import { syncSprites } from "../utils";
@@ -13,6 +14,7 @@ export class GameScene extends Phaser.Scene {
   private connection!: HathoraConnection;
 
   private shipSprite: Phaser.GameObjects.Sprite | undefined;
+  private enemySprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private projectileSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
@@ -23,8 +25,9 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image("background", backgroundUrl);
+    this.load.image("enemy", enemyUrl);
     this.load.image("laser", laserUrl);
-    this.load.image("ship", shipUrl);
+    this.load.image("player", playerUrl);
   }
 
   init({ connection }: { connection: HathoraConnection }) {
@@ -94,15 +97,27 @@ export class GameScene extends Phaser.Scene {
     if (this.connection === undefined) {
       return;
     }
-    const { playerShip: ship, projectiles } = this.connection.state;
+    const { playerShip: ship, enemyShips, projectiles } = this.connection.state;
 
     if (this.shipSprite === undefined) {
-      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
+      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
       this.shipSprite.setScale(0.5, 0.5);
       this.safeContainer.add(this.shipSprite);
     }
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
+
+    syncSprites(
+      this.enemySprites,
+      new Map(enemyShips.map((enemy) => [enemy.id, enemy])),
+      (enemy) => {
+        const sprite = new Phaser.GameObjects.Sprite(this, enemy.location.x, enemy.location.y, "enemy");
+        sprite.setScale(0.5, 0.5);
+        this.safeContainer.add(sprite);
+        return sprite;
+      },
+      (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y)
+    );
 
     syncSprites(
       this.projectileSprites,

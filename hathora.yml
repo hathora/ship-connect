@@ -5,6 +5,9 @@ types:
   PlayerShip:
     location: Point2D
     angle: float
+  EnemyShip:
+    id: int
+    location: Point2D
   Projectile:
     id: int
     location: Point2D
@@ -12,6 +15,7 @@ types:
   GameState:
     players: UserId[]
     playerShip: PlayerShip
+    enemyShips: EnemyShip[]
     projectiles: Projectile[]
 
 methods:

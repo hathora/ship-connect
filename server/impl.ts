@@ -1,5 +1,5 @@
 import { Response } from "../api/base";
-import { GameState, UserId, Point2D, IThrustTowardsRequest, PlayerShip, Projectile } from "../api/types";
+import { GameState, UserId, Point2D, IThrustTowardsRequest, PlayerShip, Projectile, EnemyShip } from "../api/types";
 import { SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
@@ -8,6 +8,7 @@ type InternalShip = PlayerShip & { target?: Point2D };
 type InternalState = {
   players: UserId[];
   playerShip: InternalShip;
+  enemyShips: EnemyShip[];
   projectiles: Projectile[];
   fireCooldown: number;
 };
@@ -20,8 +21,9 @@ export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
     return {
       players: [],
-      projectiles: [],
       playerShip: { location: { x: 100, y: 100 }, angle: 0 },
+      enemyShips: [{ id: 0, location: { x: 300, y: 300 } }],
+      projectiles: [],
       fireCooldown: PROJECTILE_COOLDOWN,
     };
   }
