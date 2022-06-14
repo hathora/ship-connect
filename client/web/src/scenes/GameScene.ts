@@ -3,6 +3,7 @@ import InputText from "phaser3-rex-plugins/plugins/inputtext";
 import { SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
+import crosshairUrl from "../../assets/crosshair.png";
 import enemyUrl from "../../assets/enemy.png";
 import laserUrl from "../../assets/laser.png";
 import playerUrl from "../../assets/player.png";
@@ -19,6 +20,7 @@ export class GameScene extends Phaser.Scene {
   private shipSprite: Phaser.GameObjects.Sprite | undefined;
 
   private shipTurret?: Phaser.GameObjects.Image;
+  private turretCrosshair?: Phaser.GameObjects.Image;
 
   private enemySprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private projectileSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
@@ -36,6 +38,7 @@ export class GameScene extends Phaser.Scene {
     this.load.image("laser", laserUrl);
     this.load.image("turret", turretUrl);
     this.load.image("player", playerUrl);
+    this.load.image("crosshair", crosshairUrl);
   }
 
   init({ connection, user }: { connection: HathoraConnection; user: AnonymousUserData }) {
@@ -71,21 +74,7 @@ export class GameScene extends Phaser.Scene {
     this.add.existing(inputText);
 
     let prevDragLoc = { x: -1, y: -1 };
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.isDown) {
-        const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
-        const { x, y } = p;
-        if (this.isFirstPlayer()) {
-          if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
-            this.connection?.thrustTowards({ location: { x, y } });
-          }
-          prevDragLoc = { x, y };
-        } else {
-          this.connection?.setTurretTarget({ location: { x, y } });
-        }
-      }
-    });
-    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    const pointerDown = (pointer: Phaser.Input.Pointer) => {
       const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
       const { x, y } = p;
       if (this.isFirstPlayer()) {
@@ -94,29 +83,36 @@ export class GameScene extends Phaser.Scene {
         }
         prevDragLoc = { x, y };
       } else {
-        this.connection?.setTurretTarget({ location: { x, y } });
+        const yOffset = this.turretCrosshair?.displayHeight ?? 0;
+        const gx = pointer.x;
+        const gy = pointer.y - yOffset;
+        this.turretCrosshair?.setPosition(gx, gy);
+        this.turretCrosshair?.setVisible(true);
+
+        this.connection?.setTurretTarget({ location: { x, y: y - yOffset } });
       }
-    });
-    this.input.on("pointerup", () => {
+    };
+    const pointerUpOrOut = () => {
       if (this.isFirstPlayer()) {
         if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
           this.connection?.thrustTowards({ location: undefined });
           prevDragLoc = { x: -1, y: -1 };
         }
       } else {
+        this.turretCrosshair?.setVisible(false);
         this.connection?.setTurretTarget({ location: undefined });
       }
-    });
-    this.input.on("gameout", () => {
-      if (this.isFirstPlayer()) {
-        if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
-          this.connection?.thrustTowards({ location: undefined });
-          prevDragLoc = { x: -1, y: -1 };
-        }
-      } else {
-        this.connection?.setTurretTarget({ location: undefined });
+    };
+
+    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) {
+        return;
       }
+      pointerDown(pointer);
     });
+    this.input.on("pointerdown", pointerDown);
+    this.input.on("pointerup", pointerUpOrOut);
+    this.input.on("gameout", pointerUpOrOut);
   }
 
   update(): void {
@@ -134,6 +130,12 @@ export class GameScene extends Phaser.Scene {
         .setScale(0.6)
         .setOrigin(0.2, 0.5);
       this.safeContainer.add(this.shipTurret);
+
+      // only the turret controller gets the crosshairs
+      if (!this.isFirstPlayer()) {
+        this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
+        this.add.existing(this.turretCrosshair);
+      }
     }
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
