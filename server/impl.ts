@@ -1,13 +1,25 @@
 import { Response } from "../api/base";
-import { GameState, UserId, Point2D, IThrustTowardsRequest, PlayerShip, Projectile } from "../api/types";
+import {
+  GameState,
+  UserId,
+  Point2D,
+  IThrustTowardsRequest,
+  PlayerShip,
+  Projectile,
+  ISetTurretStateRequest,
+  Turret,
+  TurretState,
+} from "../api/types";
 import { SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
 
 type InternalShip = PlayerShip & { target?: Point2D };
+type InternalTurret = Turret & { state: TurretState };
 type InternalState = {
   players: UserId[];
   playerShip: InternalShip;
+  turret: InternalTurret;
   projectiles: Projectile[];
   fireCooldown: number;
 };
@@ -22,6 +34,7 @@ export class Impl implements Methods<InternalState> {
       players: [],
       projectiles: [],
       playerShip: { location: { x: 100, y: 100 }, angle: 0 },
+      turret: { angle: 0, state: TurretState.IDLE },
       fireCooldown: PROJECTILE_COOLDOWN,
     };
   }
@@ -40,6 +53,14 @@ export class Impl implements Methods<InternalState> {
     state.playerShip.target = request.location;
     return Response.ok();
   }
+  setTurretState(state: InternalState, userId: string, ctx: Context, request: ISetTurretStateRequest): Response {
+    const playerIdx = state.players.indexOf(userId);
+    if (playerIdx !== 1) {
+      return Response.error("Not turret controller");
+    }
+    state.turret.state = request.state;
+    return Response.ok();
+  }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
     const ship = state.playerShip;
 
@@ -55,7 +76,22 @@ export class Impl implements Methods<InternalState> {
         ship.location.x += (dx / dist) * pixelsToMove;
         ship.location.y += (dy / dist) * pixelsToMove;
       }
-      ship.angle = Math.atan2(dy, dx);
+      const newAngle = Math.atan2(dy, dx);
+      const angleDiff = newAngle - ship.angle;
+      ship.angle = newAngle;
+      state.turret.angle += angleDiff;
+    }
+
+    switch (state.turret.state) {
+      default:
+      case TurretState.IDLE:
+        break;
+      case TurretState.MOVE_LEFT:
+        state.turret.angle -= 0.05;
+        break;
+      case TurretState.MOVE_RIGHT:
+        state.turret.angle += 0.05;
+        break;
     }
 
     state.projectiles.forEach((projectile, idx) => {

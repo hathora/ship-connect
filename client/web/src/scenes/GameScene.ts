@@ -1,5 +1,6 @@
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
+import { TurretState } from "../../../../api/types";
 import { SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
@@ -101,11 +102,9 @@ export class GameScene extends Phaser.Scene {
         const { width } = this.scale;
         const middle = width * 0.5;
         if (pointer.x < middle) {
-          this.turretControls.left = true;
-          this.turretControls.right = false;
+          this.connection?.setTurretState({ state: TurretState.MOVE_LEFT });
         } else if (pointer.x >= middle) {
-          this.turretControls.left = false;
-          this.turretControls.right = true;
+          this.connection?.setTurretState({ state: TurretState.MOVE_RIGHT });
         }
       }
     });
@@ -116,8 +115,7 @@ export class GameScene extends Phaser.Scene {
           prevDragLoc = { x: -1, y: -1 };
         }
       } else {
-        this.turretControls.left = false;
-        this.turretControls.right = false;
+        this.connection?.setTurretState({ state: TurretState.IDLE });
       }
     });
     this.input.on("gameout", () => {
@@ -135,7 +133,7 @@ export class GameScene extends Phaser.Scene {
     if (this.connection === undefined) {
       return;
     }
-    const { playerShip: ship, projectiles } = this.connection.state;
+    const { playerShip: ship, projectiles, turret } = this.connection.state;
 
     if (this.shipSprite === undefined) {
       this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
@@ -147,19 +145,13 @@ export class GameScene extends Phaser.Scene {
         .setOrigin(0.2, 0.5);
       this.safeContainer.add(this.shipTurret);
     }
-    const rotationDiff = ship.angle - this.shipSprite.rotation;
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
 
     // turret
     if (this.shipTurret) {
       this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
-      this.shipTurret.rotation += rotationDiff;
-      if (this.turretControls.left) {
-        this.shipTurret.angle -= 1;
-      } else if (this.turretControls.right) {
-        this.shipTurret.angle += 1;
-      }
+      this.shipTurret.rotation = turret.angle;
     }
 
     syncSprites(

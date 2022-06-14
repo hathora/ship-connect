@@ -1,4 +1,8 @@
 types:
+  TurretState:
+    - IDLE
+    - MOVE_LEFT
+    - MOVE_RIGHT
   Point2D:
     x: float
     y: float
@@ -9,15 +13,20 @@ types:
     id: int
     location: Point2D
     angle: float
+  Turret:
+    angle: float
   GameState:
     players: UserId[]
     playerShip: PlayerShip
+    turret: Turret
     projectiles: Projectile[]
 
 methods:
   joinGame:
   thrustTowards:
     location: Point2D?
+  setTurretState:
+    state: TurretState
 
 auth:
   anonymous: {}
