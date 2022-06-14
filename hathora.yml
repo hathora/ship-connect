@@ -17,8 +17,7 @@ types:
 methods:
   joinGame:
   thrustTowards:
-    location: Point2D
-  stopThrusting:
+    location: Point2D?
 
 auth:
   anonymous: {}

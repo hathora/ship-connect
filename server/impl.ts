@@ -39,13 +39,6 @@ export class Impl implements Methods<InternalState> {
     state.playerShip.target = request.location;
     return Response.ok();
   }
-  stopThrusting(state: InternalState, userId: string): Response {
-    if (!state.players.includes(userId)) {
-      return Response.error("Not joined");
-    }
-    state.playerShip.target = undefined;
-    return Response.ok();
-  }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
     const ship = state.playerShip;
 

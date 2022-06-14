@@ -78,13 +78,13 @@ export class GameScene extends Phaser.Scene {
     });
     this.input.on("pointerup", () => {
       if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
-        this.connection?.stopThrusting({});
+        this.connection?.thrustTowards({ location: undefined });
         prevDragLoc = { x: -1, y: -1 };
       }
     });
     this.input.on("gameout", () => {
       if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
-        this.connection?.stopThrusting({});
+        this.connection?.thrustTowards({ location: undefined });
         prevDragLoc = { x: -1, y: -1 };
       }
     });
