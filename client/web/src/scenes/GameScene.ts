@@ -5,17 +5,25 @@ import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
 import laserUrl from "../../assets/laser.png";
 import shipUrl from "../../assets/ship.png";
+import turretUrl from "../../assets/turret.png";
 import { GAME_WIDTH, GAME_HEIGHT } from "../consts";
 import { Event, eventsCenter } from "../events";
 import { syncSprites } from "../utils";
+
+import type { AnonymousUserData } from "../../../../api/base";
 
 export class GameScene extends Phaser.Scene {
   private connection!: HathoraConnection;
 
   private shipSprite: Phaser.GameObjects.Sprite | undefined;
+
+  private shipTurret?: Phaser.GameObjects.Image;
+  private turretControls = { left: false, right: false };
+
   private projectileSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
+  private localUser!: AnonymousUserData;
 
   constructor() {
     super("game");
@@ -25,10 +33,13 @@ export class GameScene extends Phaser.Scene {
     this.load.image("background", backgroundUrl);
     this.load.image("laser", laserUrl);
     this.load.image("ship", shipUrl);
+    this.load.image("turret", turretUrl);
   }
 
-  init({ connection }: { connection: HathoraConnection }) {
+  init({ connection, user }: { connection: HathoraConnection; user: AnonymousUserData }) {
     this.connection = connection;
+    this.localUser = user;
+
     connection.joinGame({});
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => eventsCenter.off(Event.Resized, this.handleResized));
@@ -59,6 +70,10 @@ export class GameScene extends Phaser.Scene {
 
     let prevDragLoc = { x: -1, y: -1 };
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      if (!this.isFirstPlayer()) {
+        return;
+      }
+
       if (pointer.isDown) {
         const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
         const { x, y } = p;
@@ -69,20 +84,46 @@ export class GameScene extends Phaser.Scene {
       }
     });
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
-      const { x, y } = p;
-      if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
-        this.connection?.thrustTowards({ location: { x, y } });
+      if (this.isFirstPlayer()) {
+        // ship controller
+        const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
+        const { x, y } = p;
+        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+          this.connection?.thrustTowards({ location: { x, y } });
+        }
+        prevDragLoc = { x, y };
+      } else {
+        // turret controller
+        if (!this.shipTurret) {
+          return;
+        }
+
+        const { width } = this.scale;
+        const middle = width * 0.5;
+        if (pointer.x < middle) {
+          this.turretControls.left = true;
+          this.turretControls.right = false;
+        } else if (pointer.x >= middle) {
+          this.turretControls.left = false;
+          this.turretControls.right = true;
+        }
       }
-      prevDragLoc = { x, y };
     });
     this.input.on("pointerup", () => {
-      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
-        this.connection?.thrustTowards({ location: undefined });
-        prevDragLoc = { x: -1, y: -1 };
+      if (this.isFirstPlayer()) {
+        if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+          this.connection?.thrustTowards({ location: undefined });
+          prevDragLoc = { x: -1, y: -1 };
+        }
+      } else {
+        this.turretControls.left = false;
+        this.turretControls.right = false;
       }
     });
     this.input.on("gameout", () => {
+      if (!this.isFirstPlayer()) {
+        return;
+      }
       if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
         this.connection?.thrustTowards({ location: undefined });
         prevDragLoc = { x: -1, y: -1 };
@@ -100,9 +141,26 @@ export class GameScene extends Phaser.Scene {
       this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "ship");
       this.shipSprite.setScale(0.5, 0.5);
       this.safeContainer.add(this.shipSprite);
+      this.shipTurret = this.add
+        .image(this.shipSprite.x, this.shipSprite.y, "turret")
+        .setScale(0.6)
+        .setOrigin(0.2, 0.5);
+      this.safeContainer.add(this.shipTurret);
     }
+    const rotationDiff = ship.angle - this.shipSprite.rotation;
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
+
+    // turret
+    if (this.shipTurret) {
+      this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
+      this.shipTurret.rotation += rotationDiff;
+      if (this.turretControls.left) {
+        this.shipTurret.angle -= 1;
+      } else if (this.turretControls.right) {
+        this.shipTurret.angle += 1;
+      }
+    }
 
     syncSprites(
       this.projectileSprites,
@@ -111,6 +169,10 @@ export class GameScene extends Phaser.Scene {
         const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
         sprite.setScale(0.5, 0.5);
         this.safeContainer.add(sprite);
+        if (this.shipTurret) {
+          this.safeContainer.moveBelow(sprite, this.shipTurret);
+        }
+
         return sprite;
       },
       (projectileSprite, projectile) =>
@@ -132,4 +194,10 @@ export class GameScene extends Phaser.Scene {
       this.positionSafeContainer();
     }
   };
+
+  private isFirstPlayer() {
+    // can probably cache this unless 'players' changes
+    const idx = this.connection.state.players.findIndex((pid) => pid === this.localUser.id);
+    return idx === 0;
+  }
 }
