@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 
-import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
-import { Event, eventsCenter } from "./events";
+import { GAME_HEIGHT, GAME_WIDTH } from "../consts";
+import { Event, eventsCenter } from "../events";
 
 export class ResizeScene extends Phaser.Scene {
   constructor() {

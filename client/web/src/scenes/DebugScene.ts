@@ -1,8 +1,7 @@
 import Phaser from "phaser";
 
-import { SafeArea } from "../../../shared/consts";
-
-import { eventsCenter, Event } from "./events";
+import { SafeArea } from "../../../../shared/consts";
+import { eventsCenter, Event } from "../events";
 
 type Options = {
   safeContainer: Phaser.GameObjects.Container;
