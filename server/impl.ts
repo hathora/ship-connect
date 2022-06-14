@@ -9,6 +9,7 @@ import {
   ISetTurretStateRequest,
   Turret,
   TurretState,
+  EnemyShip,
 } from "../api/types";
 import { SafeArea } from "../shared/consts";
 
@@ -20,6 +21,7 @@ type InternalState = {
   players: UserId[];
   playerShip: InternalShip;
   turret: InternalTurret;
+  enemyShips: EnemyShip[];
   projectiles: Projectile[];
   fireCooldown: number;
 };
@@ -32,9 +34,10 @@ export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
     return {
       players: [],
-      projectiles: [],
       playerShip: { location: { x: 100, y: 100 }, angle: 0 },
       turret: { angle: 0, state: TurretState.IDLE },
+      enemyShips: [{ id: 0, location: { x: 300, y: 300 } }],
+      projectiles: [],
       fireCooldown: PROJECTILE_COOLDOWN,
     };
   }
