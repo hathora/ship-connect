@@ -1,5 +1,7 @@
+import InputText from "phaser3-rex-plugins/plugins/inputtext";
+
 import { SafeArea } from "../../../../shared/consts";
-import { HathoraConnection, HathoraClient } from "../../../.hathora/client";
+import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
 import laserUrl from "../../assets/laser.png";
 import shipUrl from "../../assets/ship.png";
@@ -8,7 +10,8 @@ import { Event, eventsCenter } from "../events";
 import { syncSprites } from "../utils";
 
 export class GameScene extends Phaser.Scene {
-  private connection: HathoraConnection | undefined;
+  private connection!: HathoraConnection;
+
   private shipSprite: Phaser.GameObjects.Sprite | undefined;
   private projectileSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
 
@@ -24,16 +27,9 @@ export class GameScene extends Phaser.Scene {
     this.load.image("ship", shipUrl);
   }
 
-  init() {
-    const client = new HathoraClient();
-    client.loginAnonymous().then((token) => {
-      client.create(token, {}).then((stateId) => {
-        client.connect(token, stateId).then((connection) => {
-          this.connection = connection;
-          connection.joinGame({});
-        });
-      });
-    });
+  init({ connection }: { connection: HathoraConnection }) {
+    this.connection = connection;
+    connection.joinGame({});
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => eventsCenter.off(Event.Resized, this.handleResized));
     this.events.once(Phaser.Scenes.Events.DESTROY, () => eventsCenter.removeAllListeners());
@@ -50,6 +46,16 @@ export class GameScene extends Phaser.Scene {
 
     this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
+
+    const roomCodeConfig: InputText.IConfig = {
+      border: 10,
+      text: `Room Code: ${this.connection.stateId}`,
+      color: "black",
+      fontFamily: "futura",
+      readOnly: true,
+    };
+    const inputText = new InputText(this, GAME_WIDTH - 100, 20, 200, 50, roomCodeConfig).setScrollFactor(0);
+    this.add.existing(inputText);
 
     let prevDragLoc = { x: -1, y: -1 };
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
