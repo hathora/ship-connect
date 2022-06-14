@@ -33,8 +33,9 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
   thrustTowards(state: InternalState, userId: string, ctx: Context, request: IThrustTowardsRequest): Response {
-    if (!state.players.includes(userId)) {
-      return Response.error("Not joined");
+    const playerIdx = state.players.indexOf(userId);
+    if (playerIdx !== 0) {
+      return Response.error("Not navigator");
     }
     state.playerShip.target = request.location;
     return Response.ok();
