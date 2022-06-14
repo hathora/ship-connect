@@ -26,9 +26,11 @@ type InternalState = {
   fireCooldown: number;
 };
 
-const PROJECTILE_COOLDOWN = 1; // second
+const PROJECTILE_COOLDOWN = 1; // seconds
 const SHIP_SPEED = 100; // pixels per second
 const PROJECTILE_SPEED = 500; // pixels per second
+const SHIP_RADIUS = 20; // pixels
+const PROJECTILE_RADIUS = 2; // pixels
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
@@ -101,10 +103,8 @@ export class Impl implements Methods<InternalState> {
       projectile.location.x += Math.cos(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       projectile.location.y += Math.sin(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       if (
-        projectile.location.x < 0 ||
-        projectile.location.x > SafeArea.width ||
-        projectile.location.y < 0 ||
-        projectile.location.y > SafeArea.height
+        isOutOfBounds(projectile.location) ||
+        state.enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS))
       ) {
         state.projectiles.splice(idx, 1);
       }
@@ -123,4 +123,15 @@ export class Impl implements Methods<InternalState> {
   getUserState(state: InternalState): GameState {
     return state;
   }
+}
+
+function isOutOfBounds(location: Point2D) {
+  return location.x < 0 || location.x > SafeArea.width || location.y < 0 || location.y > SafeArea.height;
+}
+
+function collides(location1: Point2D, radius1: number, location2: Point2D, radius2: number) {
+  const dx = location2.x - location1.x;
+  const dy = location2.y - location1.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  return dist < radius1 + radius2;
 }
