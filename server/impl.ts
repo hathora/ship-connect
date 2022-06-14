@@ -116,7 +116,7 @@ export class Impl implements Methods<InternalState> {
       state.projectiles.push({
         id: ctx.chance.natural({ max: 1e6 }),
         location: { ...ship.location },
-        angle: ship.angle,
+        angle: state.turret.angle,
       });
     }
   }
