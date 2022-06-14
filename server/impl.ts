@@ -6,9 +6,8 @@ import {
   IThrustTowardsRequest,
   PlayerShip,
   Projectile,
-  ISetTurretStateRequest,
+  ISetTurretTargetRequest,
   Turret,
-  TurretState,
   EnemyShip,
 } from "../api/types";
 import { SafeArea } from "../shared/consts";
@@ -16,7 +15,7 @@ import { SafeArea } from "../shared/consts";
 import { Methods, Context } from "./.hathora/methods";
 
 type InternalShip = PlayerShip & { target?: Point2D };
-type InternalTurret = Turret & { state: TurretState };
+type InternalTurret = Turret & { target?: Point2D };
 type InternalState = {
   players: UserId[];
   playerShip: InternalShip;
@@ -32,12 +31,18 @@ const PROJECTILE_SPEED = 500; // pixels per second
 const SHIP_RADIUS = 20; // pixels
 const PROJECTILE_RADIUS = 2; // pixels
 
+function wrap(value: number, min: number, max: number) {
+  const range = max - min;
+
+  return min + ((((value - min) % range) + range) % range);
+}
+
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
     return {
       players: [],
       playerShip: { location: { x: 100, y: 100 }, angle: 0 },
-      turret: { angle: 0, state: TurretState.IDLE },
+      turret: { angle: 0 },
       enemyShips: [{ id: 0, location: { x: 300, y: 300 } }],
       projectiles: [],
       fireCooldown: PROJECTILE_COOLDOWN,
@@ -58,16 +63,16 @@ export class Impl implements Methods<InternalState> {
     state.playerShip.target = request.location;
     return Response.ok();
   }
-  setTurretState(state: InternalState, userId: string, ctx: Context, request: ISetTurretStateRequest): Response {
+  setTurretTarget(state: InternalState, userId: string, ctx: Context, request: ISetTurretTargetRequest): Response {
     const playerIdx = state.players.indexOf(userId);
     if (playerIdx !== 1) {
       return Response.error("Not turret controller");
     }
-    state.turret.state = request.state;
+    state.turret.target = request.location;
     return Response.ok();
   }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
-    const ship = state.playerShip;
+    const { playerShip: ship, turret } = state;
 
     if (ship.target !== undefined) {
       const dx = ship.target.x - ship.location.x;
@@ -87,16 +92,23 @@ export class Impl implements Methods<InternalState> {
       state.turret.angle += angleDiff;
     }
 
-    switch (state.turret.state) {
-      default:
-      case TurretState.IDLE:
-        break;
-      case TurretState.MOVE_LEFT:
-        state.turret.angle -= 0.05;
-        break;
-      case TurretState.MOVE_RIGHT:
-        state.turret.angle += 0.05;
-        break;
+    // move turret angle towards target
+    if (turret.target) {
+      const dx = turret.target.x - ship.location.x;
+      const dy = turret.target.y - ship.location.y;
+      const targetAngle = Math.atan2(dy, dx);
+      const diff = wrap(targetAngle - turret.angle, -Math.PI, Math.PI);
+
+      if (Math.abs(diff) < 0.025) {
+        // close enough so just snap to target
+        turret.angle = targetAngle;
+      } else {
+        if (diff < 0) {
+          turret.angle -= 0.05;
+        } else {
+          turret.angle += 0.05;
+        }
+      }
     }
 
     state.projectiles.forEach((projectile, idx) => {

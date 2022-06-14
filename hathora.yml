@@ -1,8 +1,4 @@
 types:
-  TurretState:
-    - IDLE
-    - MOVE_LEFT
-    - MOVE_RIGHT
   Point2D:
     x: float
     y: float
@@ -29,8 +25,8 @@ methods:
   joinGame:
   thrustTowards:
     location: Point2D?
-  setTurretState:
-    state: TurretState
+  setTurretTarget:
+    location: Point2D?
 
 auth:
   anonymous: {}

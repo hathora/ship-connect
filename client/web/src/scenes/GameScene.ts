@@ -1,6 +1,5 @@
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
-import { TurretState } from "../../../../api/types";
 import { SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
@@ -73,41 +72,29 @@ export class GameScene extends Phaser.Scene {
 
     let prevDragLoc = { x: -1, y: -1 };
     this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (!this.isFirstPlayer()) {
-        return;
-      }
-
       if (pointer.isDown) {
         const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
         const { x, y } = p;
-        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
-          this.connection?.thrustTowards({ location: { x, y } });
+        if (this.isFirstPlayer()) {
+          if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+            this.connection?.thrustTowards({ location: { x, y } });
+          }
+          prevDragLoc = { x, y };
+        } else {
+          this.connection?.setTurretTarget({ location: { x, y } });
         }
-        prevDragLoc = { x, y };
       }
     });
     this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
+      const { x, y } = p;
       if (this.isFirstPlayer()) {
-        // ship controller
-        const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
-        const { x, y } = p;
         if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
           this.connection?.thrustTowards({ location: { x, y } });
         }
         prevDragLoc = { x, y };
       } else {
-        // turret controller
-        if (!this.shipTurret) {
-          return;
-        }
-
-        const { width } = this.scale;
-        const middle = width * 0.5;
-        if (pointer.x < middle) {
-          this.connection?.setTurretState({ state: TurretState.MOVE_LEFT });
-        } else if (pointer.x >= middle) {
-          this.connection?.setTurretState({ state: TurretState.MOVE_RIGHT });
-        }
+        this.connection?.setTurretTarget({ location: { x, y } });
       }
     });
     this.input.on("pointerup", () => {
@@ -117,16 +104,17 @@ export class GameScene extends Phaser.Scene {
           prevDragLoc = { x: -1, y: -1 };
         }
       } else {
-        this.connection?.setTurretState({ state: TurretState.IDLE });
+        this.connection?.setTurretTarget({ location: undefined });
       }
     });
     this.input.on("gameout", () => {
-      if (!this.isFirstPlayer()) {
-        return;
-      }
-      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
-        this.connection?.thrustTowards({ location: undefined });
-        prevDragLoc = { x: -1, y: -1 };
+      if (this.isFirstPlayer()) {
+        if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+          this.connection?.thrustTowards({ location: undefined });
+          prevDragLoc = { x: -1, y: -1 };
+        }
+      } else {
+        this.connection?.setTurretTarget({ location: undefined });
       }
     });
   }
