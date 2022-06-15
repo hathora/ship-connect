@@ -4,25 +4,22 @@ import {
   UserId,
   Point2D,
   IThrustTowardsRequest,
-  PlayerShip,
-  Projectile,
   ISetTurretTargetRequest,
-  Turret,
-  EnemyShip,
   Role,
+  Entity2D,
 } from "../api/types";
 import { SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
 
-type InternalShip = PlayerShip & { target?: Point2D };
-type InternalTurret = Turret & { target?: Point2D };
+type InternalEntity = Entity2D & { target?: Point2D };
+type InternalTurret = { angle: number; target?: Point2D };
 type InternalState = {
   players: UserId[];
-  playerShip: InternalShip;
+  playerShip: InternalEntity;
   turret: InternalTurret;
-  enemyShips: EnemyShip[];
-  projectiles: Projectile[];
+  enemyShips: InternalEntity[];
+  projectiles: InternalEntity[];
   fireCooldown: number;
 };
 
@@ -33,19 +30,13 @@ const TURRET_TURN_SPEED = 0.05; // radians per second
 const SHIP_RADIUS = 20; // pixels
 const PROJECTILE_RADIUS = 2; // pixels
 
-function wrap(value: number, min: number, max: number) {
-  const range = max - min;
-
-  return min + ((((value - min) % range) + range) % range);
-}
-
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
     return {
       players: [],
-      playerShip: { location: { x: 100, y: 100 }, angle: 0 },
+      playerShip: { id: 0, location: { x: 100, y: 100 }, angle: 0 },
       turret: { angle: 0 },
-      enemyShips: [{ id: 0, location: { x: 300, y: 300 } }],
+      enemyShips: [{ id: 0, location: { x: 300, y: 300 }, angle: 0 }],
       projectiles: [],
       fireCooldown: PROJECTILE_COOLDOWN,
     };
@@ -76,6 +67,7 @@ export class Impl implements Methods<InternalState> {
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
     const { playerShip: ship, turret } = state;
 
+    // update player ship
     if (ship.target !== undefined) {
       const dx = ship.target.x - ship.location.x;
       const dy = ship.target.y - ship.location.y;
@@ -89,9 +81,8 @@ export class Impl implements Methods<InternalState> {
         ship.location.y += (dy / dist) * pixelsToMove;
       }
       const newAngle = Math.atan2(dy, dx);
-      const angleDiff = newAngle - ship.angle;
+      state.turret.angle += newAngle - ship.angle;
       ship.angle = newAngle;
-      state.turret.angle += angleDiff;
     }
 
     // move turret angle towards target
@@ -113,6 +104,29 @@ export class Impl implements Methods<InternalState> {
       }
     }
 
+    // update enemies
+    state.enemyShips.forEach((enemy) => {
+      if (enemy.target === undefined) {
+        enemy.target = {
+          x: ctx.chance.natural({ max: SafeArea.width }),
+          y: ctx.chance.natural({ max: SafeArea.height }),
+        };
+      }
+      const dx = enemy.target.x - enemy.location.x;
+      const dy = enemy.target.y - enemy.location.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const pixelsToMove = SHIP_SPEED * timeDelta;
+      if (dist <= pixelsToMove) {
+        enemy.location = { ...enemy.target };
+        enemy.target = undefined;
+      } else {
+        enemy.location.x += (dx / dist) * pixelsToMove;
+        enemy.location.y += (dy / dist) * pixelsToMove;
+      }
+      enemy.angle = Math.atan2(dy, dx);
+    });
+
+    // update projectiles
     state.projectiles.forEach((projectile, idx) => {
       projectile.location.x += Math.cos(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       projectile.location.y += Math.sin(projectile.angle) * PROJECTILE_SPEED * timeDelta;
@@ -124,6 +138,7 @@ export class Impl implements Methods<InternalState> {
       }
     });
 
+    // spawn new projectiles on cooldown
     state.fireCooldown -= timeDelta;
     if (state.fireCooldown < 0) {
       state.fireCooldown = PROJECTILE_COOLDOWN + state.fireCooldown;
@@ -137,7 +152,11 @@ export class Impl implements Methods<InternalState> {
   getUserState(state: InternalState, userId: UserId): GameState {
     const playerIdx = state.players.indexOf(userId);
     const role = playerIdx === 0 ? Role.Navigator : playerIdx === 1 ? Role.Gunner : Role.Spectator;
-    return { ...state, role };
+    return {
+      ...state,
+      turretAngle: state.turret.angle,
+      role,
+    };
   }
 }
 
@@ -150,4 +169,9 @@ function collides(location1: Point2D, radius1: number, location2: Point2D, radiu
   const dy = location2.y - location1.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
   return dist < radius1 + radius2;
+}
+
+function wrap(value: number, min: number, max: number) {
+  const range = max - min;
+  return min + ((((value - min) % range) + range) % range);
 }

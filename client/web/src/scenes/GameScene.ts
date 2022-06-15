@@ -114,7 +114,7 @@ export class GameScene extends Phaser.Scene {
     if (this.connection === undefined) {
       return;
     }
-    const { playerShip: ship, enemyShips, projectiles, turret } = this.connection.state;
+    const { playerShip: ship, enemyShips, projectiles, turretAngle } = this.connection.state;
 
     // ship
     if (this.shipSprite === undefined || this.shipTurret === undefined) {
@@ -132,7 +132,7 @@ export class GameScene extends Phaser.Scene {
 
     // turret
     this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
-    this.shipTurret.rotation = turret.angle;
+    this.shipTurret.rotation = turretAngle;
 
     // enemies
     syncSprites(
@@ -144,7 +144,7 @@ export class GameScene extends Phaser.Scene {
         this.safeContainer.add(sprite);
         return sprite;
       },
-      (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y)
+      (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y).setRotation(enemy.angle)
     );
 
     // projectiles
@@ -161,7 +161,7 @@ export class GameScene extends Phaser.Scene {
         return sprite;
       },
       (projectileSprite, projectile) =>
-        projectileSprite.setRotation(projectile.angle).setPosition(projectile.location.x, projectile.location.y)
+        projectileSprite.setPosition(projectile.location.x, projectile.location.y).setRotation(projectile.angle)
     );
   }
 

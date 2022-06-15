@@ -6,24 +6,16 @@ types:
   Point2D:
     x: float
     y: float
-  PlayerShip:
-    location: Point2D
-    angle: float
-  EnemyShip:
+  Entity2D:
     id: int
     location: Point2D
-  Projectile:
-    id: int
-    location: Point2D
-    angle: float
-  Turret:
     angle: float
   GameState:
     players: UserId[]
-    playerShip: PlayerShip
-    turret: Turret
-    enemyShips: EnemyShip[]
-    projectiles: Projectile[]
+    playerShip: Entity2D
+    turretAngle: float
+    enemyShips: Entity2D[]
+    projectiles: Entity2D[]
     role: Role
 
 methods:
