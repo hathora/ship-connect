@@ -1,5 +1,6 @@
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
+import { Role } from "../../../../api/types";
 import { SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
@@ -12,8 +13,6 @@ import { GAME_WIDTH, GAME_HEIGHT } from "../consts";
 import { Event, eventsCenter } from "../events";
 import { syncSprites } from "../utils";
 
-import type { AnonymousUserData } from "../../../../api/base";
-
 export class GameScene extends Phaser.Scene {
   private connection!: HathoraConnection;
 
@@ -24,7 +23,6 @@ export class GameScene extends Phaser.Scene {
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
-  private localUser!: AnonymousUserData;
 
   constructor() {
     super("game");
@@ -39,11 +37,8 @@ export class GameScene extends Phaser.Scene {
     this.load.image("crosshair", crosshairUrl);
   }
 
-  init({ connection, user }: { connection: HathoraConnection; user: AnonymousUserData }) {
+  init({ connection }: { connection: HathoraConnection }) {
     this.connection = connection;
-    this.localUser = user;
-
-    connection.joinGame({});
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => eventsCenter.off(Event.Resized, this.handleResized));
     this.events.once(Phaser.Scenes.Events.DESTROY, () => eventsCenter.removeAllListeners());
@@ -71,8 +66,11 @@ export class GameScene extends Phaser.Scene {
     const inputText = new InputText(this, GAME_WIDTH - 100, 20, 200, 50, roomCodeConfig).setScrollFactor(0);
     this.add.existing(inputText);
 
-    // only the turret controller gets the crosshairs
-    if (!this.isFirstPlayer()) {
+    const role = this.connection.state.role;
+    console.log("role", role);
+
+    // only the gunner gets the crosshairs
+    if (role === Role.Gunner) {
       this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
       this.add.existing(this.turretCrosshair);
     }
@@ -84,24 +82,24 @@ export class GameScene extends Phaser.Scene {
       }
       const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
       const { x, y } = p;
-      if (this.isFirstPlayer()) {
+      if (role === Role.Navigator) {
         if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
           this.connection?.thrustTowards({ location: { x, y } });
         }
         prevDragLoc = { x, y };
-      } else {
+      } else if (role === Role.Gunner) {
         this.turretCrosshair?.setPosition(pointer.x, pointer.y);
         this.turretCrosshair?.setVisible(true);
         this.connection?.setTurretTarget({ location: { x, y } });
       }
     };
     const pointerUpOrOut = () => {
-      if (this.isFirstPlayer()) {
+      if (role === Role.Navigator) {
         if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
           this.connection?.thrustTowards({ location: undefined });
           prevDragLoc = { x: -1, y: -1 };
         }
-      } else {
+      } else if (role === Role.Gunner) {
         this.turretCrosshair?.setVisible(false);
         this.connection?.setTurretTarget({ location: undefined });
       }
@@ -175,10 +173,4 @@ export class GameScene extends Phaser.Scene {
       this.safeContainer.y = (height - SafeArea.height) * 0.5;
     }
   };
-
-  private isFirstPlayer() {
-    // can probably cache this unless 'players' changes
-    const idx = this.connection.state.players.findIndex((pid) => pid === this.localUser.id);
-    return idx === 0;
-  }
 }

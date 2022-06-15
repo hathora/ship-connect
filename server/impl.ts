@@ -9,6 +9,7 @@ import {
   ISetTurretTargetRequest,
   Turret,
   EnemyShip,
+  Role,
 } from "../api/types";
 import { SafeArea } from "../shared/consts";
 
@@ -133,8 +134,10 @@ export class Impl implements Methods<InternalState> {
       });
     }
   }
-  getUserState(state: InternalState): GameState {
-    return state;
+  getUserState(state: InternalState, userId: UserId): GameState {
+    const playerIdx = state.players.indexOf(userId);
+    const role = playerIdx === 0 ? Role.Navigator : playerIdx === 1 ? Role.Gunner : Role.Spectator;
+    return { ...state, role };
   }
 }
 

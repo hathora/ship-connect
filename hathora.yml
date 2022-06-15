@@ -1,4 +1,8 @@
 types:
+  Role:
+    - Navigator
+    - Gunner
+    - Spectator
   Point2D:
     x: float
     y: float
@@ -20,6 +24,7 @@ types:
     turret: Turret
     enemyShips: EnemyShip[]
     projectiles: Projectile[]
+    role: Role
 
 methods:
   joinGame:

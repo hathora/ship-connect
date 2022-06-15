@@ -32,8 +32,8 @@ export class LobbyScene extends Phaser.Scene {
         const token = sessionStorage.getItem("token")!;
         const stateId = await client.create(token, {});
         const connection = await client.connect(token, stateId);
-        const user = HathoraClient.getUserFromToken(token);
-        this.scene.start("game", { connection, user });
+        await connection.joinGame({});
+        this.scene.start("game", { connection });
       });
 
     const joinButton = this.add
@@ -61,8 +61,8 @@ export class LobbyScene extends Phaser.Scene {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const token = sessionStorage.getItem("token")!;
         const connection = await client.connect(token, stateId);
-        const user = HathoraClient.getUserFromToken(token);
-        this.scene.start("game", { connection, user });
+        await connection.joinGame({});
+        this.scene.start("game", { connection });
       });
 
     const inputTextConfig: InputText.IConfig = {
