@@ -17,13 +17,11 @@ import type { AnonymousUserData } from "../../../../api/base";
 export class GameScene extends Phaser.Scene {
   private connection!: HathoraConnection;
 
-  private shipSprite: Phaser.GameObjects.Sprite | undefined;
-
+  private shipSprite?: Phaser.GameObjects.Image;
   private shipTurret?: Phaser.GameObjects.Image;
   private turretCrosshair?: Phaser.GameObjects.Image;
-
-  private enemySprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
-  private projectileSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
+  private enemySprites: Map<number, Phaser.GameObjects.Image> = new Map();
+  private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
   private localUser!: AnonymousUserData;
@@ -73,8 +71,17 @@ export class GameScene extends Phaser.Scene {
     const inputText = new InputText(this, GAME_WIDTH - 100, 20, 200, 50, roomCodeConfig).setScrollFactor(0);
     this.add.existing(inputText);
 
+    // only the turret controller gets the crosshairs
+    if (!this.isFirstPlayer()) {
+      this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
+      this.add.existing(this.turretCrosshair);
+    }
+
     let prevDragLoc = { x: -1, y: -1 };
     const pointerDown = (pointer: Phaser.Input.Pointer) => {
+      if (!pointer.isDown) {
+        return;
+      }
       const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
       const { x, y } = p;
       if (this.isFirstPlayer()) {
@@ -100,12 +107,7 @@ export class GameScene extends Phaser.Scene {
       }
     };
 
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.isDown) {
-        return;
-      }
-      pointerDown(pointer);
-    });
+    this.input.on("pointermove", pointerDown);
     this.input.on("pointerdown", pointerDown);
     this.input.on("pointerup", pointerUpOrOut);
     this.input.on("gameout", pointerUpOrOut);
@@ -117,49 +119,44 @@ export class GameScene extends Phaser.Scene {
     }
     const { playerShip: ship, enemyShips, projectiles, turret } = this.connection.state;
 
-    if (this.shipSprite === undefined) {
-      this.shipSprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, "player");
-      this.shipSprite.setScale(0.5, 0.5);
+    // ship
+    if (this.shipSprite === undefined || this.shipTurret === undefined) {
+      this.shipSprite = new Phaser.GameObjects.Image(this, ship.location.x, ship.location.y, "player");
+      this.shipSprite.setScale(0.5);
       this.safeContainer.add(this.shipSprite);
       this.shipTurret = this.add
         .image(this.shipSprite.x, this.shipSprite.y, "turret")
         .setScale(0.6)
         .setOrigin(0.2, 0.5);
       this.safeContainer.add(this.shipTurret);
-
-      // only the turret controller gets the crosshairs
-      if (!this.isFirstPlayer()) {
-        this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
-        this.add.existing(this.turretCrosshair);
-      }
     }
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
 
     // turret
-    if (this.shipTurret !== undefined) {
-      this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
-      this.shipTurret.rotation = turret.angle;
-    }
+    this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
+    this.shipTurret.rotation = turret.angle;
 
+    // enemies
     syncSprites(
       this.enemySprites,
       new Map(enemyShips.map((enemy) => [enemy.id, enemy])),
       (enemy) => {
         const sprite = new Phaser.GameObjects.Sprite(this, enemy.location.x, enemy.location.y, "enemy");
-        sprite.setScale(0.5, 0.5);
+        sprite.setScale(0.5);
         this.safeContainer.add(sprite);
         return sprite;
       },
       (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y)
     );
 
+    // projectiles
     syncSprites(
       this.projectileSprites,
       new Map(projectiles.map((projectile) => [projectile.id, projectile])),
       (projectile) => {
         const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
-        sprite.setScale(0.5, 0.5);
+        sprite.setScale(0.5);
         this.safeContainer.add(sprite);
         if (this.shipTurret !== undefined) {
           this.safeContainer.moveBelow(sprite, this.shipTurret);
@@ -171,18 +168,11 @@ export class GameScene extends Phaser.Scene {
     );
   }
 
-  private positionSafeContainer() {
-    const { width, height } = this.scale;
-    const x = (width - SafeArea.width) * 0.5;
-    const y = (height - SafeArea.height) * 0.5;
-
-    this.safeContainer.x = x;
-    this.safeContainer.y = y;
-  }
-
   private handleResized = () => {
     if (this.safeContainer !== undefined) {
-      this.positionSafeContainer();
+      const { width, height } = this.scale;
+      this.safeContainer.x = (width - SafeArea.width) * 0.5;
+      this.safeContainer.y = (height - SafeArea.height) * 0.5;
     }
   };
 

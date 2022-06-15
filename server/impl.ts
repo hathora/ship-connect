@@ -28,6 +28,7 @@ type InternalState = {
 const PROJECTILE_COOLDOWN = 1; // seconds
 const SHIP_SPEED = 100; // pixels per second
 const PROJECTILE_SPEED = 500; // pixels per second
+const TURRET_TURN_SPEED = 0.05; // radians per second
 const SHIP_RADIUS = 20; // pixels
 const PROJECTILE_RADIUS = 2; // pixels
 
@@ -99,14 +100,14 @@ export class Impl implements Methods<InternalState> {
       const targetAngle = Math.atan2(dy, dx);
       const diff = wrap(targetAngle - turret.angle, -Math.PI, Math.PI);
 
-      if (Math.abs(diff) < 0.025) {
+      if (Math.abs(diff) < TURRET_TURN_SPEED / 2) {
         // close enough so just snap to target
         turret.angle = targetAngle;
       } else {
         if (diff < 0) {
-          turret.angle -= 0.05;
+          turret.angle -= TURRET_TURN_SPEED;
         } else {
-          turret.angle += 0.05;
+          turret.angle += TURRET_TURN_SPEED;
         }
       }
     }

@@ -1,10 +1,10 @@
 import Phaser from "phaser";
 
 export function syncSprites<T>(
-  clientSprites: Map<number, Phaser.GameObjects.Sprite>,
+  clientSprites: Map<number, Phaser.GameObjects.Image>,
   serverSprites: Map<number, T>,
-  onNew: (serverSprite: T) => Phaser.GameObjects.Sprite,
-  onUpdate: (clientSprite: Phaser.GameObjects.Sprite, serverSprite: T) => void
+  onNew: (serverSprite: T) => Phaser.GameObjects.Image,
+  onUpdate: (clientSprite: Phaser.GameObjects.Image, serverSprite: T) => void
 ) {
   clientSprites.forEach((clientSprite, id) => {
     const serverSprite = serverSprites.get(id);
