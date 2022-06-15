@@ -83,13 +83,9 @@ export class GameScene extends Phaser.Scene {
         }
         prevDragLoc = { x, y };
       } else {
-        const yOffset = this.turretCrosshair?.displayHeight ?? 0;
-        const gx = pointer.x;
-        const gy = pointer.y - yOffset;
-        this.turretCrosshair?.setPosition(gx, gy);
+        this.turretCrosshair?.setPosition(pointer.x, pointer.y);
         this.turretCrosshair?.setVisible(true);
-
-        this.connection?.setTurretTarget({ location: { x, y: y - yOffset } });
+        this.connection?.setTurretTarget({ location: { x, y } });
       }
     };
     const pointerUpOrOut = () => {
@@ -141,7 +137,7 @@ export class GameScene extends Phaser.Scene {
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
 
     // turret
-    if (this.shipTurret) {
+    if (this.shipTurret !== undefined) {
       this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
       this.shipTurret.rotation = turret.angle;
     }
@@ -165,10 +161,9 @@ export class GameScene extends Phaser.Scene {
         const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
         sprite.setScale(0.5, 0.5);
         this.safeContainer.add(sprite);
-        if (this.shipTurret) {
+        if (this.shipTurret !== undefined) {
           this.safeContainer.moveBelow(sprite, this.shipTurret);
         }
-
         return sprite;
       },
       (projectileSprite, projectile) =>
