@@ -36,22 +36,20 @@ const PROJECTILE_RADIUS = 2; // pixels
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
-    return {
-      players: [],
-      playerShip: { id: 0, location: { x: 100, y: 100 }, angle: 0 },
-      turret: { angle: 0 },
-      enemyShips: [{ id: 1, location: { x: 300, y: 300 }, angle: 0 }],
-      projectiles: [],
-      score: 0,
-      gameOver: false,
-      fireCooldown: PROJECTILE_COOLDOWN,
-    };
+    return { players: [], ...initializeState({}) };
   }
   joinGame(state: InternalState, userId: UserId): Response {
     if (state.players.some((player) => player === userId)) {
       return Response.error("Already joined");
     }
     state.players.push(userId);
+    return Response.ok();
+  }
+  playAgain(state: InternalState): Response {
+    if (!state.gameOver) {
+      return Response.error("Game in progress");
+    }
+    initializeState(state);
     return Response.ok();
   }
   thrustTowards(state: InternalState, userId: string, ctx: Context, request: IThrustTowardsRequest): Response {
@@ -125,10 +123,7 @@ export class Impl implements Methods<InternalState> {
     // update enemies
     enemyShips.forEach((enemy) => {
       if (enemy.target === undefined) {
-        enemy.target = {
-          x: ctx.chance.natural({ max: SafeArea.width }),
-          y: ctx.chance.natural({ max: SafeArea.height }),
-        };
+        enemy.target = randomLocation(ctx);
       }
       const dx = enemy.target.x - enemy.location.x;
       const dy = enemy.target.y - enemy.location.y;
@@ -207,6 +202,17 @@ export class Impl implements Methods<InternalState> {
   }
 }
 
+function initializeState(state: Partial<InternalState>): Omit<InternalState, "players"> {
+  state.playerShip = { id: 0, location: { x: 100, y: 100 }, angle: 0 };
+  state.turret = { angle: 0 };
+  state.enemyShips = [{ id: 1, location: { x: 300, y: 300 }, angle: 0 }];
+  state.projectiles = [];
+  state.score = 0;
+  state.gameOver = false;
+  state.fireCooldown = PROJECTILE_COOLDOWN;
+  return state as Omit<InternalState, "players">;
+}
+
 function isOutOfBounds(location: Point2D) {
   return location.x < 0 || location.x > SafeArea.width || location.y < 0 || location.y > SafeArea.height;
 }
@@ -221,4 +227,11 @@ function collides(location1: Point2D, radius1: number, location2: Point2D, radiu
 function wrap(value: number, min: number, max: number) {
   const range = max - min;
   return min + ((((value - min) % range) + range) % range);
+}
+
+function randomLocation(ctx: Context) {
+  return {
+    x: ctx.chance.natural({ max: SafeArea.width }),
+    y: ctx.chance.natural({ max: SafeArea.height }),
+  };
 }
