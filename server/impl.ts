@@ -22,6 +22,7 @@ type InternalState = {
   enemyShips: InternalShip[];
   projectiles: InternalProjectile[];
   score: number;
+  gameOver: boolean;
   fireCooldown: number;
 };
 
@@ -42,6 +43,7 @@ export class Impl implements Methods<InternalState> {
       enemyShips: [{ id: 1, location: { x: 300, y: 300 }, angle: 0 }],
       projectiles: [],
       score: 0,
+      gameOver: false,
       fireCooldown: PROJECTILE_COOLDOWN,
     };
   }
@@ -69,7 +71,10 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
-    const { playerShip: ship, turret } = state;
+    const { playerShip: ship, turret, gameOver } = state;
+    if (gameOver) {
+      return;
+    }
 
     // update player ship
     if (ship.target !== undefined) {
@@ -152,6 +157,7 @@ export class Impl implements Methods<InternalState> {
       ) {
         // collision with player ship
         state.projectiles.splice(idx, 1);
+        state.gameOver = true;
       }
       if (
         state.enemyShips.some(

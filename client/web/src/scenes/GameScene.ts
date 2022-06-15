@@ -114,7 +114,11 @@ export class GameScene extends Phaser.Scene {
     if (this.connection === undefined) {
       return;
     }
-    const { playerShip: ship, enemyShips, projectiles, turretAngle } = this.connection.state;
+    const { playerShip: ship, enemyShips, projectiles, turretAngle, score, gameOver } = this.connection.state;
+    if (gameOver) {
+      alert("Game over: " + score);
+      return;
+    }
 
     // ship
     if (this.shipSprite === undefined || this.shipTurret === undefined) {

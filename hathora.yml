@@ -17,6 +17,7 @@ types:
     enemyShips: Entity2D[]
     projectiles: Entity2D[]
     score: int
+    gameOver: boolean
     role: Role
 
 methods:
