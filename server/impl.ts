@@ -20,6 +20,7 @@ type InternalState = {
   turret: InternalTurret;
   enemyShips: InternalEntity[];
   projectiles: InternalEntity[];
+  score: number;
   fireCooldown: number;
 };
 
@@ -39,6 +40,7 @@ export class Impl implements Methods<InternalState> {
       turret: { angle: 0 },
       enemyShips: [{ id: 0, location: { x: 300, y: 300 }, angle: 0 }],
       projectiles: [],
+      score: 0,
       fireCooldown: PROJECTILE_COOLDOWN,
     };
   }
@@ -140,11 +142,14 @@ export class Impl implements Methods<InternalState> {
     state.projectiles.forEach((projectile, idx) => {
       projectile.location.x += Math.cos(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       projectile.location.y += Math.sin(projectile.angle) * PROJECTILE_SPEED * timeDelta;
+      if (isOutOfBounds(projectile.location)) {
+        state.projectiles.splice(idx, 1);
+      }
       if (
-        isOutOfBounds(projectile.location) ||
         state.enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS))
       ) {
         state.projectiles.splice(idx, 1);
+        state.score++;
       }
     });
 
