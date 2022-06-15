@@ -67,7 +67,6 @@ export class GameScene extends Phaser.Scene {
     this.add.existing(inputText);
 
     const role = this.connection.state.role;
-    console.log("role", role);
 
     // only the gunner gets the crosshairs
     if (role === Role.Gunner) {
