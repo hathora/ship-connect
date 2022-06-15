@@ -12,14 +12,15 @@ import { SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
 
-type InternalEntity = Entity2D & { target?: Point2D };
+type InternalShip = Entity2D & { target?: Point2D };
+type InternalProjectile = Entity2D & { firedBy: number };
 type InternalTurret = { angle: number; target?: Point2D };
 type InternalState = {
   players: UserId[];
-  playerShip: InternalEntity;
+  playerShip: InternalShip;
   turret: InternalTurret;
-  enemyShips: InternalEntity[];
-  projectiles: InternalEntity[];
+  enemyShips: InternalShip[];
+  projectiles: InternalProjectile[];
   score: number;
   fireCooldown: number;
 };
@@ -38,7 +39,7 @@ export class Impl implements Methods<InternalState> {
       players: [],
       playerShip: { id: 0, location: { x: 100, y: 100 }, angle: 0 },
       turret: { angle: 0 },
-      enemyShips: [{ id: 0, location: { x: 300, y: 300 }, angle: 0 }],
+      enemyShips: [{ id: 1, location: { x: 300, y: 300 }, angle: 0 }],
       projectiles: [],
       score: 0,
       fireCooldown: PROJECTILE_COOLDOWN,
@@ -146,8 +147,20 @@ export class Impl implements Methods<InternalState> {
         state.projectiles.splice(idx, 1);
       }
       if (
-        state.enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS))
+        projectile.firedBy !== ship.id &&
+        collides(ship.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
       ) {
+        // collision with player ship
+        state.projectiles.splice(idx, 1);
+      }
+      if (
+        state.enemyShips.some(
+          (enemy) =>
+            projectile.firedBy !== enemy.id &&
+            collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
+        )
+      ) {
+        // collision with enemy ship
         state.projectiles.splice(idx, 1);
         state.score++;
       }
@@ -161,6 +174,15 @@ export class Impl implements Methods<InternalState> {
         id: ctx.chance.natural({ max: 1e6 }),
         location: { ...ship.location },
         angle: state.turret.angle,
+        firedBy: ship.id,
+      });
+      state.enemyShips.forEach((enemy) => {
+        state.projectiles.push({
+          id: ctx.chance.natural({ max: 1e6 }),
+          location: { ...enemy.location },
+          angle: enemy.angle,
+          firedBy: enemy.id,
+        });
       });
     }
   }
