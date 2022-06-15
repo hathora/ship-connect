@@ -71,8 +71,8 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
-    const { playerShip: ship, turret, gameOver } = state;
-    if (gameOver) {
+    const { playerShip: ship, enemyShips, projectiles, turret } = state;
+    if (state.gameOver) {
       return;
     }
 
@@ -83,15 +83,15 @@ export class Impl implements Methods<InternalState> {
       const targetAngle = Math.atan2(dy, dx);
       const angleDiff = wrap(targetAngle - ship.angle, -Math.PI, Math.PI);
       if (Math.abs(angleDiff) < SHIP_TURN_SPEED * timeDelta) {
-        state.turret.angle += targetAngle - ship.angle;
+        turret.angle += targetAngle - ship.angle;
         ship.angle = targetAngle;
       } else {
         if (angleDiff < 0) {
           ship.angle -= SHIP_TURN_SPEED;
-          state.turret.angle -= SHIP_TURN_SPEED;
+          turret.angle -= SHIP_TURN_SPEED;
         } else {
           ship.angle += SHIP_TURN_SPEED;
-          state.turret.angle += SHIP_TURN_SPEED;
+          turret.angle += SHIP_TURN_SPEED;
         }
       }
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -123,7 +123,7 @@ export class Impl implements Methods<InternalState> {
     }
 
     // update enemies
-    state.enemyShips.forEach((enemy) => {
+    enemyShips.forEach((enemy) => {
       if (enemy.target === undefined) {
         enemy.target = {
           x: ctx.chance.natural({ max: SafeArea.width }),
@@ -144,30 +144,34 @@ export class Impl implements Methods<InternalState> {
       enemy.angle = Math.atan2(dy, dx);
     });
 
+    if (enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, ship.location, SHIP_RADIUS))) {
+      state.gameOver = true;
+    }
+
     // update projectiles
-    state.projectiles.forEach((projectile, idx) => {
+    projectiles.forEach((projectile, idx) => {
       projectile.location.x += Math.cos(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       projectile.location.y += Math.sin(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       if (isOutOfBounds(projectile.location)) {
-        state.projectiles.splice(idx, 1);
+        projectiles.splice(idx, 1);
       }
       if (
         projectile.firedBy !== ship.id &&
         collides(ship.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
       ) {
         // collision with player ship
-        state.projectiles.splice(idx, 1);
+        projectiles.splice(idx, 1);
         state.gameOver = true;
       }
       if (
-        state.enemyShips.some(
+        enemyShips.some(
           (enemy) =>
             projectile.firedBy !== enemy.id &&
             collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
         )
       ) {
         // collision with enemy ship
-        state.projectiles.splice(idx, 1);
+        projectiles.splice(idx, 1);
         state.score++;
       }
     });
@@ -175,15 +179,15 @@ export class Impl implements Methods<InternalState> {
     // spawn new projectiles on cooldown
     state.fireCooldown -= timeDelta;
     if (state.fireCooldown < 0) {
-      state.fireCooldown = PROJECTILE_COOLDOWN + state.fireCooldown;
-      state.projectiles.push({
+      state.fireCooldown += PROJECTILE_COOLDOWN;
+      projectiles.push({
         id: ctx.chance.natural({ max: 1e6 }),
         location: { ...ship.location },
-        angle: state.turret.angle,
+        angle: turret.angle,
         firedBy: ship.id,
       });
-      state.enemyShips.forEach((enemy) => {
-        state.projectiles.push({
+      enemyShips.forEach((enemy) => {
+        projectiles.push({
           id: ctx.chance.natural({ max: 1e6 }),
           location: { ...enemy.location },
           angle: enemy.angle,
