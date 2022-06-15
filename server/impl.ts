@@ -30,7 +30,6 @@ const PROJECTILE_COOLDOWN = 1; // seconds
 const SHIP_SPEED = 100; // pixels per second
 const PROJECTILE_SPEED = 500; // pixels per second
 const SHIP_TURN_SPEED = 0.05; // radians per second
-const TURRET_TURN_SPEED = 0.05; // radians per second
 const SHIP_RADIUS = 20; // pixels
 const PROJECTILE_RADIUS = 2; // pixels
 
@@ -80,18 +79,16 @@ export class Impl implements Methods<InternalState> {
       const dy = ship.target.y - ship.location.y;
       const targetAngle = Math.atan2(dy, dx);
       const angleDiff = wrap(targetAngle - ship.angle, -Math.PI, Math.PI);
-      if (Math.abs(angleDiff) < SHIP_TURN_SPEED * timeDelta) {
-        turret.angle += targetAngle - ship.angle;
+      if (Math.abs(angleDiff) < SHIP_TURN_SPEED / 2) {
         ship.angle = targetAngle;
       } else {
         if (angleDiff < 0) {
           ship.angle -= SHIP_TURN_SPEED;
-          turret.angle -= SHIP_TURN_SPEED;
         } else {
           ship.angle += SHIP_TURN_SPEED;
-          turret.angle += SHIP_TURN_SPEED;
         }
       }
+      turret.angle = ship.angle;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist <= SHIP_SPEED * timeDelta) {
         ship.location = { ...ship.target };
@@ -102,22 +99,11 @@ export class Impl implements Methods<InternalState> {
       }
     }
 
-    // move turret angle towards target
+    // update turret angle
     if (turret.target) {
       const dx = turret.target.x - ship.location.x;
       const dy = turret.target.y - ship.location.y;
-      const targetAngle = Math.atan2(dy, dx);
-      const angleDiff = wrap(targetAngle - turret.angle, -Math.PI, Math.PI);
-      if (Math.abs(angleDiff) < TURRET_TURN_SPEED * timeDelta) {
-        // close enough so just snap to target
-        turret.angle = targetAngle;
-      } else {
-        if (angleDiff < 0) {
-          turret.angle -= TURRET_TURN_SPEED;
-        } else {
-          turret.angle += TURRET_TURN_SPEED;
-        }
-      }
+      turret.angle = Math.atan2(dy, dx);
     }
 
     // update enemies
