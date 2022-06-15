@@ -23,6 +23,7 @@ export class GameScene extends Phaser.Scene {
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
+  private scoreText!: Phaser.GameObjects.Text;
 
   constructor() {
     super("game");
@@ -57,14 +58,16 @@ export class GameScene extends Phaser.Scene {
     this.scene.run("resize-scene");
 
     const roomCodeConfig: InputText.IConfig = {
-      border: 10,
       text: `Room Code: ${this.connection.stateId}`,
       color: "black",
       fontFamily: "futura",
+      fontSize: "20px",
       readOnly: true,
     };
-    const inputText = new InputText(this, GAME_WIDTH - 100, 20, 200, 50, roomCodeConfig).setScrollFactor(0);
+    const inputText = new InputText(this, GAME_WIDTH - 100, 20, 300, 50, roomCodeConfig).setScrollFactor(0);
     this.add.existing(inputText);
+
+    this.scoreText = this.add.text(10, 10, "Score: 0", { color: "black", fontFamily: "futura", fontSize: "20px" });
 
     const role = this.connection.state.role;
 
@@ -167,6 +170,9 @@ export class GameScene extends Phaser.Scene {
       (projectileSprite, projectile) =>
         projectileSprite.setPosition(projectile.location.x, projectile.location.y).setRotation(projectile.angle)
     );
+
+    // score
+    this.scoreText.text = `Score: ${score}`;
   }
 
   private handleResized = () => {
