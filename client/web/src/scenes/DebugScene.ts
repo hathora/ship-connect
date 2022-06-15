@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-import { SafeArea } from "../../../../shared/consts";
+import { GameArea, SafeArea } from "../../../../shared/consts";
 import { eventsCenter, Event } from "../events";
 
 type Options = {
@@ -31,7 +31,7 @@ export class DebugScene extends Phaser.Scene {
     this.safeContainer = safeContainer;
 
     this.safeRect = this.add
-      .rectangle(safeContainer.x, safeContainer.y, SafeArea.width, SafeArea.height, 0, 0)
+      .rectangle(safeContainer.x, safeContainer.y, GameArea.width, SafeArea.height, 0, 0)
       .setOrigin(0);
     this.safeRect.setStrokeStyle(LINE_WIDTH, 0x00ff00, 0.7);
 

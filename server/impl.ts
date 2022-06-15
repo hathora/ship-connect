@@ -8,7 +8,7 @@ import {
   Role,
   Entity2D,
 } from "../api/types";
-import { SafeArea } from "../shared/consts";
+import { GameArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
 
@@ -200,7 +200,7 @@ function initializeState(state: Partial<InternalState>): Omit<InternalState, "pl
 }
 
 function isOutOfBounds(location: Point2D) {
-  return location.x < 0 || location.x > SafeArea.width || location.y < 0 || location.y > SafeArea.height;
+  return location.x < 0 || location.x > GameArea.width || location.y < 0 || location.y > GameArea.height;
 }
 
 function collides(location1: Point2D, radius1: number, location2: Point2D, radius2: number) {
@@ -217,7 +217,7 @@ function wrap(value: number, min: number, max: number) {
 
 function randomLocation(ctx: Context) {
   return {
-    x: ctx.chance.natural({ max: SafeArea.width }),
-    y: ctx.chance.natural({ max: SafeArea.height }),
+    x: ctx.chance.natural({ max: GameArea.width }),
+    y: ctx.chance.natural({ max: GameArea.height }),
   };
 }

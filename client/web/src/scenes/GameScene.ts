@@ -1,7 +1,7 @@
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
 import { Role } from "../../../../api/types";
-import { SafeArea } from "../../../../shared/consts";
+import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
 import crosshairUrl from "../../assets/crosshair.png";
@@ -9,9 +9,11 @@ import enemyUrl from "../../assets/enemy.png";
 import laserUrl from "../../assets/laser.png";
 import playerUrl from "../../assets/player.png";
 import turretUrl from "../../assets/turret.png";
-import { GAME_WIDTH, GAME_HEIGHT } from "../consts";
+import { GAME_WIDTH } from "../consts";
 import { Event, eventsCenter } from "../events";
 import { syncSprites } from "../utils";
+
+let prevDragLoc = { x: -1, y: -1 };
 
 export class GameScene extends Phaser.Scene {
   private connection!: HathoraConnection;
@@ -41,14 +43,22 @@ export class GameScene extends Phaser.Scene {
   init({ connection }: { connection: HathoraConnection }) {
     this.connection = connection;
 
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => eventsCenter.off(Event.Resized, this.handleResized));
+    const winResize = () => {
+      eventsCenter.on(Event.Resized, this.handleResized);
+    };
+    window.addEventListener("resize", winResize);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      eventsCenter.off(Event.Resized, this.handleResized);
+      window.removeEventListener("resize", winResize);
+    });
     this.events.once(Phaser.Scenes.Events.DESTROY, () => eventsCenter.removeAllListeners());
   }
 
   create() {
     // NOTE: using 2x width/height so that it covers space when in a mobile resolution
     // that could be slightly bigger; 2x _should_ cover all the cases
-    this.add.tileSprite(0, 0, GAME_WIDTH * 2, GAME_HEIGHT * 2, "background").setOrigin(0, 0);
+    this.add.tileSprite(0, 0, GameArea.width * 2, GameArea.height * 2, "background").setOrigin(0, 0);
 
     this.safeContainer = this.add.container();
 
@@ -76,25 +86,6 @@ export class GameScene extends Phaser.Scene {
       this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
       this.add.existing(this.turretCrosshair);
     }
-
-    let prevDragLoc = { x: -1, y: -1 };
-    const pointerDown = (pointer: Phaser.Input.Pointer) => {
-      if (!pointer.isDown) {
-        return;
-      }
-      const p = this.safeContainer.pointToContainer(pointer) as Phaser.Math.Vector2;
-      const { x, y } = p;
-      if (role === Role.Navigator) {
-        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
-          this.connection?.thrustTowards({ location: { x, y } });
-        }
-        prevDragLoc = { x, y };
-      } else if (role === Role.Gunner) {
-        this.turretCrosshair?.setPosition(pointer.x, pointer.y);
-        this.turretCrosshair?.setVisible(true);
-        this.connection?.setTurretTarget({ location: { x, y } });
-      }
-    };
     const pointerUpOrOut = () => {
       if (role === Role.Navigator) {
         if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
@@ -107,8 +98,6 @@ export class GameScene extends Phaser.Scene {
       }
     };
 
-    this.input.on("pointermove", pointerDown);
-    this.input.on("pointerdown", pointerDown);
     this.input.on("pointerup", pointerUpOrOut);
     this.input.on("gameout", pointerUpOrOut);
   }
@@ -123,6 +112,24 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    const pointer = this.input.activePointer;
+    if (pointer.isDown) {
+      // NOTE: need to update this since as camera scrolls, the target position is changing
+      const role = this.connection.state.role;
+      const p = pointer.positionToCamera(this.cameras.main) as Phaser.Math.Vector2;
+      const { x, y } = this.safeContainer.pointToContainer(p) as Phaser.Math.Vector2;
+      if (role === Role.Navigator) {
+        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
+          this.connection?.thrustTowards({ location: { x, y } });
+        }
+        prevDragLoc = { x, y };
+      } else if (role === Role.Gunner) {
+        this.turretCrosshair?.setPosition(p.x, p.y);
+        this.turretCrosshair?.setVisible(true);
+        this.connection?.setTurretTarget({ location: { x, y } });
+      }
+    }
+
     // ship
     if (this.shipSprite === undefined || this.shipTurret === undefined) {
       this.shipSprite = new Phaser.GameObjects.Image(this, ship.location.x, ship.location.y, "player");
@@ -133,6 +140,7 @@ export class GameScene extends Phaser.Scene {
         .setScale(0.6)
         .setOrigin(0.2, 0.5);
       this.safeContainer.add(this.shipTurret);
+      this.cameras.main.startFollow(this.shipSprite);
     }
     this.shipSprite.setRotation(ship.angle);
     this.shipSprite.setPosition(ship.location.x, ship.location.y);
@@ -177,9 +185,12 @@ export class GameScene extends Phaser.Scene {
 
   private handleResized = () => {
     if (this.safeContainer !== undefined) {
-      const { width, height } = this.scale;
-      this.safeContainer.x = (width - SafeArea.width) * 0.5;
+      const { height } = this.scale;
+      this.safeContainer.x = 0;
       this.safeContainer.y = (height - SafeArea.height) * 0.5;
+
+      this.cameras.main.setFollowOffset(0, -this.safeContainer.y);
+      this.cameras.main.setBounds(0, 0, GameArea.width, height);
     }
   };
 }
