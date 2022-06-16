@@ -88,18 +88,18 @@ export class GameScene extends Phaser.Scene {
       this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
       this.add.existing(this.turretCrosshair);
     }
+
     const pointerUpOrOut = () => {
-      if (role === Role.Navigator) {
-        if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+      if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
+        prevDragLoc = { x: -1, y: -1 };
+        if (role === Role.Navigator) {
           this.connection?.thrustTowards({ location: undefined });
-          prevDragLoc = { x: -1, y: -1 };
+        } else if (role === Role.Gunner) {
+          this.turretCrosshair?.setVisible(false);
+          this.connection?.setTurretTarget({ location: undefined });
         }
-      } else if (role === Role.Gunner) {
-        this.turretCrosshair?.setVisible(false);
-        this.connection?.setTurretTarget({ location: undefined });
       }
     };
-
     this.input.on("pointerup", pointerUpOrOut);
     this.input.on("gameout", pointerUpOrOut);
   }
@@ -120,15 +120,15 @@ export class GameScene extends Phaser.Scene {
       const role = this.connection.state.role;
       const p = pointer.positionToCamera(this.cameras.main) as Phaser.Math.Vector2;
       const { x, y } = this.safeContainer.pointToContainer(p) as Phaser.Math.Vector2;
-      if (role === Role.Navigator) {
-        if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
-          this.connection?.thrustTowards({ location: { x, y } });
-        }
+      if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
         prevDragLoc = { x, y };
-      } else if (role === Role.Gunner) {
-        this.turretCrosshair?.setPosition(p.x, p.y);
-        this.turretCrosshair?.setVisible(true);
-        this.connection?.setTurretTarget({ location: { x, y } });
+        if (role === Role.Navigator) {
+          this.connection?.thrustTowards({ location: { x, y } });
+        } else if (role === Role.Gunner) {
+          this.turretCrosshair?.setPosition(p.x, p.y);
+          this.turretCrosshair?.setVisible(true);
+          this.connection?.setTurretTarget({ location: { x, y } });
+        }
       }
     }
 
