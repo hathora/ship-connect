@@ -111,6 +111,7 @@ export class GameScene extends Phaser.Scene {
     const { playerShip: ship, enemyShips, projectiles, turretAngle, score, gameOver } = this.connection.state;
     if (gameOver) {
       alert("Game over! Your final score was: " + score);
+      this.connection.playAgain({});
       return;
     }
 
