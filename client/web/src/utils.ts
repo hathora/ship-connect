@@ -1,16 +1,18 @@
 import Phaser from "phaser";
 
-export function syncSprites<T>(
-  clientSprites: Map<number, Phaser.GameObjects.Image>,
+export function syncSprites<T, SpriteType extends Phaser.GameObjects.GameObject>(
+  clientSprites: Map<number, SpriteType>,
   serverSprites: Map<number, T>,
-  onNew: (serverSprite: T) => Phaser.GameObjects.Image,
-  onUpdate: (clientSprite: Phaser.GameObjects.Image, serverSprite: T) => void
+  onNew: (serverSprite: T) => SpriteType,
+  onUpdate: (clientSprite: SpriteType, serverSprite: T) => void,
+  onDelete?: (clientSprite: SpriteType) => void
 ) {
   clientSprites.forEach((clientSprite, id) => {
     const serverSprite = serverSprites.get(id);
     serverSprites.delete(id);
     if (serverSprite === undefined) {
       // sprite deleted on server
+      onDelete?.(clientSprite);
       clientSprite.destroy();
       clientSprites.delete(id);
     } else {

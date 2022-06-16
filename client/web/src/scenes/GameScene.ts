@@ -20,7 +20,7 @@ export class GameScene extends Phaser.Scene {
   private shipSprite?: Phaser.GameObjects.Image;
   private shipTurret?: Phaser.GameObjects.Image;
   private turretAimLine!: Phaser.GameObjects.Line;
-  private enemySprites: Map<number, Phaser.GameObjects.Image> = new Map();
+  private enemySprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
@@ -36,6 +36,8 @@ export class GameScene extends Phaser.Scene {
     this.load.image("laser", laserUrl);
     this.load.image("turret", turretUrl);
     this.load.image("player", playerUrl);
+
+    this.load.atlas("explosion", "assets/explosion.png", "assets/explosion.json");
   }
 
   init({ connection }: { connection: HathoraConnection }) {
@@ -54,9 +56,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // NOTE: using 2x width/height so that it covers space when in a mobile resolution
-    // that could be slightly bigger; 2x _should_ cover all the cases
-    this.add.tileSprite(0, 0, GameArea.width * 2, GameArea.height * 2, "background").setOrigin(0, 0);
+    this.add.tileSprite(0, 0, GameArea.width, GameArea.height * 2, "background").setOrigin(0, 0);
 
     this.safeContainer = this.add.container();
 
@@ -96,6 +96,17 @@ export class GameScene extends Phaser.Scene {
     };
     this.input.on("pointerup", pointerUpOrOut);
     this.input.on("gameout", pointerUpOrOut);
+
+    this.anims.create({
+      key: "explosion",
+      frames: this.anims.generateFrameNames("explosion", {
+        start: 0,
+        end: 8,
+        prefix: "regularExplosion0",
+        suffix: ".png",
+      }),
+      frameRate: 15,
+    });
   }
 
   update(): void {
@@ -157,7 +168,15 @@ export class GameScene extends Phaser.Scene {
         this.safeContainer.add(sprite);
         return sprite;
       },
-      (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y).setRotation(enemy.angle)
+      (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y).setRotation(enemy.angle),
+      (enemySprite) => {
+        const explosion = this.add.sprite(enemySprite.x, enemySprite.y, "explosion");
+        this.safeContainer.add(explosion);
+        explosion.play("explosion");
+        explosion.once(`${Phaser.Animations.Events.ANIMATION_COMPLETE_KEY}-explosion`, () => {
+          explosion.destroy();
+        });
+      }
     );
 
     // projectiles
