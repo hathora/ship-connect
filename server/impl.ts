@@ -24,9 +24,11 @@ type InternalState = {
   score: number;
   gameOver: boolean;
   fireCooldown: number;
+  spawnCooldown: number;
 };
 
 const PROJECTILE_COOLDOWN = 1; // seconds
+const ENEMY_SPAWN_COOLDOWN = 15; // seconds
 const SHIP_SPEED = 100; // pixels per second
 const PROJECTILE_SPEED = 500; // pixels per second
 const SHIP_TURN_SPEED = 0.05; // radians per second
@@ -181,6 +183,17 @@ export class Impl implements Methods<InternalState> {
         });
       });
     }
+
+    // spawn new enemies on cooldown
+    state.spawnCooldown -= timeDelta;
+    if (state.spawnCooldown < 0) {
+      state.spawnCooldown += ENEMY_SPAWN_COOLDOWN;
+      enemyShips.push({
+        id: ctx.chance.natural({ max: 1e6 }),
+        location: randomLocation(ctx),
+        angle: 0,
+      });
+    }
   }
   getUserState(state: InternalState, userId: UserId): GameState {
     const playerIdx = state.players.indexOf(userId);
@@ -201,6 +214,7 @@ function initializeState(state: Partial<InternalState>): Omit<InternalState, "pl
   state.score = 0;
   state.gameOver = false;
   state.fireCooldown = PROJECTILE_COOLDOWN;
+  state.spawnCooldown = ENEMY_SPAWN_COOLDOWN;
   return state as Omit<InternalState, "players">;
 }
 
