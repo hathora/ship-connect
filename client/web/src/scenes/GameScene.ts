@@ -46,6 +46,17 @@ export class GameScene extends Phaser.Scene {
   init({ connection }: { connection: HathoraConnection }) {
     this.connection = connection;
 
+    const onPlayerDamage = () => {
+      this.cameras.main.shake(300, 0.03);
+      if (connection.state.playerShip.health <= 0) {
+        if (!this.shipSprite) {
+          return;
+        }
+        this.playExplosion(this.shipSprite?.x, this.shipSprite?.y);
+      }
+    };
+    eventsCenter.on(Event.PlayerDamager, onPlayerDamage);
+
     const winResize = () => {
       eventsCenter.on(Event.Resized, this.handleResized);
     };
@@ -53,6 +64,7 @@ export class GameScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventsCenter.off(Event.Resized, this.handleResized);
+      eventsCenter.off(Event.PlayerDamager, onPlayerDamage);
       window.removeEventListener("resize", winResize);
     });
     this.events.once(Phaser.Scenes.Events.DESTROY, () => eventsCenter.removeAllListeners());
@@ -117,7 +129,7 @@ export class GameScene extends Phaser.Scene {
 
     const pointer = this.input.activePointer;
     if (pointer.isDown) {
-      // NOTE: need to update this since as camera scrolls, the target position is changing
+      // NOTE: need to calc this on update since as camera scrolls, the target position is changing
       const role = this.connection.state.role;
       const p = pointer.positionToCamera(this.cameras.main) as Phaser.Math.Vector2;
       const { x, y } = this.safeContainer.pointToContainer(p) as Phaser.Math.Vector2;
@@ -165,12 +177,7 @@ export class GameScene extends Phaser.Scene {
       },
       (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y).setRotation(enemy.angle),
       (enemySprite) => {
-        const explosion = this.add.sprite(enemySprite.x, enemySprite.y, "explosion");
-        this.safeContainer.add(explosion);
-        explosion.play("explosion");
-        explosion.once(`${Phaser.Animations.Events.ANIMATION_COMPLETE_KEY}-explosion`, () => {
-          explosion.destroy();
-        });
+        this.playExplosion(enemySprite.x, enemySprite.y);
       }
     );
 
@@ -190,6 +197,15 @@ export class GameScene extends Phaser.Scene {
       (projectileSprite, projectile) =>
         projectileSprite.setPosition(projectile.location.x, projectile.location.y).setRotation(projectile.angle)
     );
+  }
+
+  private playExplosion(x: number, y: number) {
+    const explosion = this.add.sprite(x, y, "explosion");
+    this.safeContainer.add(explosion);
+    explosion.play("explosion");
+    explosion.once(`${Phaser.Animations.Events.ANIMATION_COMPLETE_KEY}-explosion`, () => {
+      explosion.destroy();
+    });
   }
 
   private handleResized = () => {

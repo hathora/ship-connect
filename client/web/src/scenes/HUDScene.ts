@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { SafeArea } from "../../../../shared/consts";
+import { Event, eventsCenter } from "../events";
 
 import type { HathoraConnection } from "../../../.hathora/client";
 
@@ -144,7 +145,6 @@ export class HUDScene extends Phaser.Scene {
             ease: Phaser.Math.Easing.Sine.InOut,
             duration: 500,
           });
-          return;
         }
 
         if (!playerShip) {
@@ -154,6 +154,10 @@ export class HUDScene extends Phaser.Scene {
         const health = playerShip.health ?? 0;
         if (this.lastHealth === health) {
           return;
+        }
+
+        if (health < this.lastHealth) {
+          eventsCenter.emit(Event.PlayerDamager);
         }
 
         for (let i = 0; i < this.hearts.length; ++i) {
