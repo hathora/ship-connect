@@ -74,10 +74,12 @@ export class GameScene extends Phaser.Scene {
       fontSize: "20px",
       readOnly: true,
     };
-    const inputText = new InputText(this, GAME_WIDTH - 100, 20, 300, 50, roomCodeConfig).setScrollFactor(0);
-    this.add.existing(inputText);
+    const inputText = new InputText(this, GAME_WIDTH - 150, 20, 300, 50, roomCodeConfig);
+    this.add.existing(inputText).setScrollFactor(0);
 
-    this.scoreText = this.add.text(10, 10, "Score: 0", { color: "black", fontFamily: "futura", fontSize: "20px" });
+    this.scoreText = this.add
+      .text(10, 10, "Score: 0", { color: "black", fontFamily: "futura", fontSize: "20px" })
+      .setScrollFactor(0);
 
     const role = this.connection.state.role;
 
