@@ -13,7 +13,7 @@ import { GameArea } from "../shared/consts";
 import { Methods, Context } from "./.hathora/methods";
 
 type InternalShip = Entity2D & { target?: Point2D };
-type InternalProjectile = Entity2D & { firedBy: number };
+type InternalProjectile = Entity2D & { firedBy: number; attackPoints: number };
 type InternalTurret = { angle: number; target?: Point2D };
 type InternalState = {
   players: UserId[];
