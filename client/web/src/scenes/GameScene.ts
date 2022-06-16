@@ -65,7 +65,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
 
-    this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000);
+    this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000, 0.5);
     this.safeContainer.add(this.turretAimLine);
 
     const roomCodeConfig: InputText.IConfig = {
