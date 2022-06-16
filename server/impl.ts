@@ -144,7 +144,11 @@ export class Impl implements Methods<InternalState> {
       ) {
         // collision with player ship
         projectiles.splice(projectileIdx, 1);
-        state.gameOver = true;
+        ship.health -= projectile.attackPoints ?? 0;
+
+        if (ship.health <= 0) {
+          state.gameOver = true;
+        }
       }
       enemyShips.forEach((enemy, enemyIdx) => {
         if (
@@ -153,13 +157,17 @@ export class Impl implements Methods<InternalState> {
         ) {
           // collision with enemy ship
           projectiles.splice(projectileIdx, 1);
-          enemyShips.splice(enemyIdx, 1);
-          enemyShips.push({
-            id: ctx.chance.natural({ max: 1e6 }),
-            location: randomLocation(ctx),
-            angle: 0,
-          });
-          state.score++;
+          enemy.health -= projectile.attackPoints ?? 0;
+          if (enemy.health <= 0) {
+            enemyShips.splice(enemyIdx, 1);
+            enemyShips.push({
+              id: ctx.chance.natural({ max: 1e6 }),
+              location: randomLocation(ctx),
+              angle: 0,
+              health: 100,
+            });
+            state.score++;
+          }
         }
       });
     });
@@ -173,6 +181,8 @@ export class Impl implements Methods<InternalState> {
         location: { ...ship.location },
         angle: turret.angle,
         firedBy: ship.id,
+        attackPoints: 100,
+        health: 100,
       });
       enemyShips.forEach((enemy) => {
         projectiles.push({
@@ -180,6 +190,8 @@ export class Impl implements Methods<InternalState> {
           location: { ...enemy.location },
           angle: enemy.angle,
           firedBy: enemy.id,
+          attackPoints: 33,
+          health: 100,
         });
       });
     }
@@ -192,6 +204,7 @@ export class Impl implements Methods<InternalState> {
         id: ctx.chance.natural({ max: 1e6 }),
         location: randomLocation(ctx),
         angle: 0,
+        health: 100,
       });
     }
   }
@@ -207,9 +220,9 @@ export class Impl implements Methods<InternalState> {
 }
 
 function initializeState(state: Partial<InternalState>): Omit<InternalState, "players"> {
-  state.playerShip = { id: 0, location: { x: 100, y: 100 }, angle: 0 };
+  state.playerShip = { id: 0, location: { x: 100, y: 100 }, angle: 0, health: 99 };
   state.turret = { angle: 0 };
-  state.enemyShips = [{ id: 1, location: { x: 300, y: 300 }, angle: 0 }];
+  state.enemyShips = [{ id: 1, location: { x: 300, y: 300 }, angle: 0, health: 100 }];
   state.projectiles = [];
   state.score = 0;
   state.gameOver = false;

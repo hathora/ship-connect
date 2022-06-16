@@ -24,7 +24,6 @@ export class GameScene extends Phaser.Scene {
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
 
   private safeContainer!: Phaser.GameObjects.Container;
-  private scoreText!: Phaser.GameObjects.Text;
 
   constructor() {
     super("game");
@@ -38,6 +37,8 @@ export class GameScene extends Phaser.Scene {
     this.load.image("player", playerUrl);
 
     this.load.atlas("explosion", "assets/explosion.png", "assets/explosion.json");
+    this.load.image("heart-full", "assets/hud_heartFull.png");
+    this.load.image("heart-empty", "assets/hud_heartEmpty.png");
   }
 
   init({ connection }: { connection: HathoraConnection }) {
@@ -64,6 +65,7 @@ export class GameScene extends Phaser.Scene {
 
     this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
+    this.scene.run("hud-scene", { connection: this.connection });
 
     this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000, 0.5);
     this.safeContainer.add(this.turretAimLine);
@@ -77,10 +79,6 @@ export class GameScene extends Phaser.Scene {
     };
     const inputText = new InputText(this, GAME_WIDTH - 150, 20, 300, 50, roomCodeConfig);
     this.add.existing(inputText).setScrollFactor(0);
-
-    this.scoreText = this.add
-      .text(10, 10, "Score: 0", { color: "black", fontFamily: "futura", fontSize: "20px" })
-      .setScrollFactor(0);
 
     const role = this.connection.state.role;
 
@@ -195,9 +193,6 @@ export class GameScene extends Phaser.Scene {
       (projectileSprite, projectile) =>
         projectileSprite.setPosition(projectile.location.x, projectile.location.y).setRotation(projectile.angle)
     );
-
-    // score
-    this.scoreText.text = `Score: ${score}`;
   }
 
   private handleResized = () => {
