@@ -72,6 +72,7 @@ export class LobbyScene extends Phaser.Scene {
       placeholder: "Room Code",
       color: "black",
       fontFamily: "futura",
+      fontSize: "16px",
     };
     const inputText = new InputText(this, joinButton.x, joinButton.y - 40, 100, 30, inputTextConfig);
     this.add.existing(inputText);
