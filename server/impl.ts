@@ -130,31 +130,36 @@ export class Impl implements Methods<InternalState> {
     }
 
     // update projectiles
-    projectiles.forEach((projectile, idx) => {
+    projectiles.forEach((projectile, projectileIdx) => {
       projectile.location.x += Math.cos(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       projectile.location.y += Math.sin(projectile.angle) * PROJECTILE_SPEED * timeDelta;
       if (isOutOfBounds(projectile.location)) {
-        projectiles.splice(idx, 1);
+        projectiles.splice(projectileIdx, 1);
       }
       if (
         projectile.firedBy !== ship.id &&
         collides(ship.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
       ) {
         // collision with player ship
-        projectiles.splice(idx, 1);
+        projectiles.splice(projectileIdx, 1);
         state.gameOver = true;
       }
-      if (
-        enemyShips.some(
-          (enemy) =>
-            projectile.firedBy !== enemy.id &&
-            collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
-        )
-      ) {
-        // collision with enemy ship
-        projectiles.splice(idx, 1);
-        state.score++;
-      }
+      enemyShips.forEach((enemy, enemyIdx) => {
+        if (
+          projectile.firedBy !== enemy.id &&
+          collides(enemy.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)
+        ) {
+          // collision with enemy ship
+          projectiles.splice(projectileIdx, 1);
+          enemyShips.splice(enemyIdx, 1);
+          enemyShips.push({
+            id: ctx.chance.natural({ max: 1e6 }),
+            location: randomLocation(ctx),
+            angle: 0,
+          });
+          state.score++;
+        }
+      });
     });
 
     // spawn new projectiles on cooldown
