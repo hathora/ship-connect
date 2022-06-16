@@ -4,7 +4,6 @@ import { Role } from "../../../../api/types";
 import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
-import crosshairUrl from "../../assets/crosshair.png";
 import enemyUrl from "../../assets/enemy.png";
 import laserUrl from "../../assets/laser.png";
 import playerUrl from "../../assets/player.png";
@@ -20,7 +19,7 @@ export class GameScene extends Phaser.Scene {
 
   private shipSprite?: Phaser.GameObjects.Image;
   private shipTurret?: Phaser.GameObjects.Image;
-  private turretCrosshair?: Phaser.GameObjects.Image;
+  private turretAimLine!: Phaser.GameObjects.Line;
   private enemySprites: Map<number, Phaser.GameObjects.Image> = new Map();
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
 
@@ -37,7 +36,6 @@ export class GameScene extends Phaser.Scene {
     this.load.image("laser", laserUrl);
     this.load.image("turret", turretUrl);
     this.load.image("player", playerUrl);
-    this.load.image("crosshair", crosshairUrl);
   }
 
   init({ connection }: { connection: HathoraConnection }) {
@@ -67,6 +65,9 @@ export class GameScene extends Phaser.Scene {
     this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
 
+    this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000);
+    this.safeContainer.add(this.turretAimLine);
+
     const roomCodeConfig: InputText.IConfig = {
       text: `Room Code: ${this.connection.stateId}`,
       color: "black",
@@ -83,19 +84,12 @@ export class GameScene extends Phaser.Scene {
 
     const role = this.connection.state.role;
 
-    // only the gunner gets the crosshairs
-    if (role === Role.Gunner) {
-      this.turretCrosshair = this.add.image(0, 0, "crosshair").setVisible(false);
-      this.add.existing(this.turretCrosshair);
-    }
-
     const pointerUpOrOut = () => {
       if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
         prevDragLoc = { x: -1, y: -1 };
         if (role === Role.Navigator) {
           this.connection?.thrustTowards({ location: undefined });
         } else if (role === Role.Gunner) {
-          this.turretCrosshair?.setVisible(false);
           this.connection?.setTurretTarget({ location: undefined });
         }
       }
@@ -126,8 +120,6 @@ export class GameScene extends Phaser.Scene {
         if (role === Role.Navigator) {
           this.connection?.thrustTowards({ location: { x, y } });
         } else if (role === Role.Gunner) {
-          this.turretCrosshair?.setPosition(p.x, p.y);
-          this.turretCrosshair?.setVisible(true);
           this.connection?.setTurretTarget({ location: { x, y } });
         }
       }
@@ -138,10 +130,7 @@ export class GameScene extends Phaser.Scene {
       this.shipSprite = new Phaser.GameObjects.Image(this, ship.location.x, ship.location.y, "player");
       this.shipSprite.setScale(0.5);
       this.safeContainer.add(this.shipSprite);
-      this.shipTurret = this.add
-        .image(this.shipSprite.x, this.shipSprite.y, "turret")
-        .setScale(0.6)
-        .setOrigin(0.2, 0.5);
+      this.shipTurret = this.add.image(ship.location.x, ship.location.y, "turret").setScale(0.6).setOrigin(0.2, 0.5);
       this.safeContainer.add(this.shipTurret);
       this.cameras.main.startFollow(this.shipSprite);
     }
@@ -151,6 +140,12 @@ export class GameScene extends Phaser.Scene {
     // turret
     this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
     this.shipTurret.rotation = turretAngle;
+    this.turretAimLine.setTo(
+      ship.location.x,
+      ship.location.y,
+      ship.location.x + Math.cos(turretAngle) * GAME_WIDTH,
+      ship.location.y + Math.sin(turretAngle) * GAME_WIDTH
+    );
 
     // enemies
     syncSprites(
