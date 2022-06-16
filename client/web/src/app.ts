@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { Plugin as NineSlicePlugin } from "phaser3-nineslice";
 
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
 import { DebugScene } from "./scenes/DebugScene";
@@ -15,4 +16,7 @@ new Phaser.Game({
   parent: "root",
   dom: { createContainer: true },
   scale: { mode: Phaser.Scale.ScaleModes.NONE },
+  plugins: {
+    global: [NineSlicePlugin.DefaultCfg],
+  },
 });

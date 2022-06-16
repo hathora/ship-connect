@@ -1,6 +1,14 @@
 import Phaser from "phaser";
 
+import { SafeArea } from "../../../../shared/consts";
+
 import type { HathoraConnection } from "../../../.hathora/client";
+
+enum State {
+  Playing,
+  GameOver,
+  Restarting,
+}
 
 export class HUDScene extends Phaser.Scene {
   private connection!: HathoraConnection;
@@ -8,7 +16,12 @@ export class HUDScene extends Phaser.Scene {
   private hearts: Phaser.GameObjects.Image[] = [];
   private scoreText!: Phaser.GameObjects.Text;
 
+  private gameOverContainer!: Phaser.GameObjects.Container;
+  private finalScoreText!: Phaser.GameObjects.Text;
+
   private lastHealth = 0;
+
+  private state = State.Playing;
 
   constructor() {
     super("hud-scene");
@@ -28,6 +41,75 @@ export class HUDScene extends Phaser.Scene {
       .setOrigin(1, 0.5)
       .setAlign("right")
       .setStroke("black", 4);
+
+    const { width, height } = this.scale;
+    this.gameOverContainer = this.add.container(width * 0.5, height * 0.5);
+    this.gameOverContainer.setVisible(false);
+
+    const panelHeight = SafeArea.height * 0.8;
+    this.gameOverContainer.add(
+      this.add
+        .nineslice(0, 0, width * 0.8, panelHeight, "panel", 16)
+        .setOrigin(0.5)
+        .setAlpha(0.9)
+        .setTint(0x162144)
+    );
+
+    this.finalScoreText = this.add
+      .text(0, 0, "0", {
+        color: "#ff3086",
+        fontFamily: "futura",
+        fontSize: "100px",
+      })
+      .setOrigin(0.5)
+      .setStroke("black", 4);
+
+    this.gameOverContainer.add([
+      this.add
+        .text(0, -panelHeight * 0.4, "GAME OVER", { color: "white", fontFamily: "futura", fontSize: "40px" })
+        .setOrigin(0.5)
+        .setStroke("black", 4),
+      this.add
+        .text(0, -panelHeight * 0.2, "Your final score is:", {
+          color: "#86ff30",
+          fontFamily: "futura",
+          fontSize: "25px",
+        })
+        .setOrigin(0.5)
+        .setStroke("black", 4),
+      this.finalScoreText,
+      this.add
+        .text(0, panelHeight * 0.15, "kills", {
+          color: "white",
+          fontFamily: "futura",
+          fontSize: "20px",
+        })
+        .setOrigin(0.5)
+        .setStroke("black", 4),
+    ]);
+    const replayButton = this.add
+      .image(0, panelHeight * 0.3, "button")
+      .setInteractive()
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+        replayButton.alpha = 0.7;
+      })
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => {
+        replayButton.alpha = 1;
+      })
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
+        this.connection.playAgain({});
+        this.gameOverContainer.setVisible(false);
+      });
+    this.gameOverContainer.add([
+      replayButton,
+      this.add
+        .text(replayButton.x, replayButton.y, "Play again", {
+          color: "black",
+          fontFamily: "futura",
+          fontSize: "20px",
+        })
+        .setOrigin(0.5),
+    ]);
   }
 
   update() {
@@ -35,30 +117,57 @@ export class HUDScene extends Phaser.Scene {
       return;
     }
 
-    const { playerShip, score } = this.connection.state;
+    const { playerShip, score, gameOver } = this.connection.state;
 
-    // score
-    this.scoreText.text = `Score: ${score}`;
+    switch (this.state) {
+      case State.GameOver: {
+        if (!gameOver) {
+          this.state = State.Playing;
+        }
+        return;
+      }
 
-    if (!playerShip) {
-      return;
-    }
+      case State.Playing: {
+        // score
+        this.scoreText.text = `Score: ${score}`;
 
-    const health = playerShip.health ?? 0;
-    if (this.lastHealth === health) {
-      return;
-    }
+        if (gameOver && !this.gameOverContainer.visible) {
+          this.state = State.GameOver;
+          this.finalScoreText.text = score.toLocaleString();
+          this.gameOverContainer.setVisible(true);
+          this.gameOverContainer.y += SafeArea.height;
+          this.gameOverContainer.alpha = 0;
+          this.tweens.add({
+            targets: this.gameOverContainer,
+            y: this.scale.height * 0.5,
+            alpha: 1,
+            ease: Phaser.Math.Easing.Sine.InOut,
+            duration: 500,
+          });
+          return;
+        }
 
-    for (let i = 0; i < this.hearts.length; ++i) {
-      const v = (i + 1) * 33;
-      const heart = this.hearts[i];
-      if (v <= health) {
-        heart.setTexture("heart-full");
-      } else {
-        heart.setTexture("heart-empty");
+        if (!playerShip) {
+          return;
+        }
+
+        const health = playerShip.health ?? 0;
+        if (this.lastHealth === health) {
+          return;
+        }
+
+        for (let i = 0; i < this.hearts.length; ++i) {
+          const v = (i + 1) * 33;
+          const heart = this.hearts[i];
+          if (v <= health) {
+            heart.setTexture("heart-full");
+          } else {
+            heart.setTexture("heart-empty");
+          }
+        }
+
+        this.lastHealth = health;
       }
     }
-
-    this.lastHealth = health;
   }
 }
