@@ -86,9 +86,9 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
   setTurretTarget(state: InternalState, userId: string, ctx: Context, request: ISetTurretTargetRequest): Response {
-    const playerShip = state.friendlyShips.find((ship) => ship.navigator === userId);
+    const playerShip = state.friendlyShips.find((ship) => ship.gunner === userId);
     if (playerShip === undefined) {
-      return Response.error("Not navigator");
+      return Response.error("Not gunner");
     }
     const dx = request.location.x - playerShip.location.x;
     const dy = request.location.y - playerShip.location.y;
