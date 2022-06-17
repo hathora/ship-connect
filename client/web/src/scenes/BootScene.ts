@@ -6,7 +6,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.run("lobby");
     this.scene.run("resize-scene");
+    this.scene.run("lobby");
   }
 }

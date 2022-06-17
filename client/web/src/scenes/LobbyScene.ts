@@ -1,7 +1,6 @@
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
 import { HathoraClient } from "../../../.hathora/client";
-import { GAME_HEIGHT, GAME_WIDTH } from "../consts";
 
 export class LobbyScene extends Phaser.Scene {
   constructor() {
@@ -11,8 +10,9 @@ export class LobbyScene extends Phaser.Scene {
   create() {
     const client = new HathoraClient();
 
+    const { width, height } = this.scale;
     const createButton = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 4, "Create New Game", {
+      .text(width / 2, height / 4, "Create New Game", {
         fontSize: "20px",
         fontFamily: "futura",
       })
@@ -37,7 +37,7 @@ export class LobbyScene extends Phaser.Scene {
       });
 
     const joinButton = this.add
-      .text(GAME_WIDTH / 2, (GAME_HEIGHT * 3) / 4, "Join Existing Game", {
+      .text(width / 2, (height * 3) / 4, "Join Existing Game", {
         fontSize: "20px",
         fontFamily: "futura",
       })

@@ -1,5 +1,3 @@
-import InputText from "phaser3-rex-plugins/plugins/inputtext";
-
 import { EntityType, Role } from "../../../../api/types";
 import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
@@ -9,7 +7,6 @@ import laserBlueUrl from "../../assets/laser-blue.png";
 import laserRedUrl from "../../assets/laser-red.png";
 import playerUrl from "../../assets/player.png";
 import turretUrl from "../../assets/turret.png";
-import { GAME_WIDTH } from "../consts";
 import { Event, eventsCenter } from "../events";
 import { syncSprites } from "../utils";
 
