@@ -144,7 +144,7 @@ export class Impl implements Methods<InternalState> {
       ) {
         // collision with player ship
         projectiles.splice(projectileIdx, 1);
-        ship.health -= projectile.attackPoints ?? 0;
+        ship.health -= projectile.attackPoints;
 
         if (ship.health <= 0) {
           state.gameOver = true;
@@ -157,15 +157,9 @@ export class Impl implements Methods<InternalState> {
         ) {
           // collision with enemy ship
           projectiles.splice(projectileIdx, 1);
-          enemy.health -= projectile.attackPoints ?? 0;
+          enemy.health -= projectile.attackPoints;
           if (enemy.health <= 0) {
             enemyShips.splice(enemyIdx, 1);
-            enemyShips.push({
-              id: ctx.chance.natural({ max: 1e6 }),
-              location: randomLocation(ctx),
-              angle: 0,
-              health: 100,
-            });
             state.score++;
           }
         }
@@ -202,7 +196,7 @@ export class Impl implements Methods<InternalState> {
       state.spawnCooldown += ENEMY_SPAWN_COOLDOWN;
       enemyShips.push({
         id: ctx.chance.natural({ max: 1e6 }),
-        location: randomLocation(ctx),
+        location: newEnemyLocation(ship, ctx),
         angle: 0,
         health: 100,
       });
@@ -245,6 +239,14 @@ function collides(location1: Point2D, radius1: number, location2: Point2D, radiu
 function wrap(value: number, min: number, max: number) {
   const range = max - min;
   return min + ((((value - min) % range) + range) % range);
+}
+
+function newEnemyLocation(playerShip: Entity2D, ctx: Context): Point2D {
+  const randomLoc = randomLocation(ctx);
+  if (collides(randomLoc, SHIP_RADIUS, playerShip.location, SHIP_RADIUS * 2)) {
+    return newEnemyLocation(playerShip, ctx);
+  }
+  return randomLoc;
 }
 
 function randomLocation(ctx: Context) {
