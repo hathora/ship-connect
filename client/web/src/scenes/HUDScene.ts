@@ -55,13 +55,13 @@ export class HUDScene extends Phaser.Scene {
     );
 
     this.scoreText = this.add
-      .text(width - 20, 20, "Score: 0", { color: "white", fontFamily: "futura", fontSize: "20px" })
+      .text(width - 20, 20, "0 kills", { color: "white", fontFamily: "futura", fontSize: "20px" })
       .setOrigin(1, 0.5)
       .setAlign("right")
       .setStroke("black", 4);
 
     this.roleText = this.add
-      .text(width * 0.5, 25, roleAsString(this.connection.state.playerShip?.role), {
+      .text(width * 0.5, 20, roleAsString(this.connection.state.playerShip?.role), {
         color: "#fca050",
         fontFamily: "futura",
         fontSize: "20px",
@@ -183,7 +183,7 @@ export class HUDScene extends Phaser.Scene {
 
       case State.Playing: {
         // score
-        this.scoreText.text = `Score: ${score}`;
+        this.scoreText.text = `${score} kill${score === 1 ? "" : "s"}`;
 
         if (playerShip.lives <= 0 && numFriendlyShips(ships) === 1 && !this.gameOverContainer.visible) {
           this.state = State.GameOver;
