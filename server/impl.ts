@@ -196,6 +196,7 @@ export class Impl implements Methods<InternalState> {
             state.score++;
             enemyShips.splice(enemyIdx, 1);
             projectiles.splice(projectileIdx, 1);
+            enemyShips.push(newEnemy(friendlyShips, ctx));
           }
         });
       }
