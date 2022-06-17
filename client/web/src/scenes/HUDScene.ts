@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
 import { Entity, EntityType } from "../../../../api/types";
 import { SafeArea } from "../../../../shared/consts";
@@ -112,6 +113,26 @@ export class HUDScene extends Phaser.Scene {
         })
         .setOrigin(0.5),
     ]);
+
+    const roomCodeConfig: InputText.IConfig = {
+      text: `Room Code: ${this.connection.stateId}`,
+      color: "white",
+      fontFamily: "futura",
+      fontSize: "20px",
+      readOnly: true,
+    };
+
+    const inputText = new InputText(this, width * 0.5, height - 40, 300, 50, roomCodeConfig).setOrigin(0.5);
+    inputText.setStyle("cursor", "pointer");
+    inputText.on("click", async () => {
+      await navigator.clipboard.writeText(this.connection.stateId);
+      const old = inputText.text;
+      inputText.setText("Room Code: COPIED!");
+      this.time.delayedCall(1000, () => {
+        inputText.setText(old);
+      });
+    });
+    this.add.existing(inputText);
   }
 
   update() {

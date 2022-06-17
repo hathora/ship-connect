@@ -74,21 +74,10 @@ export class GameScene extends Phaser.Scene {
     eventsCenter.on(Event.Resized, this.handleResized);
 
     // this.scene.run("debug-scene", { safeContainer: this.safeContainer });
-    this.scene.run("resize-scene");
     this.scene.run("hud-scene", { connection: this.connection });
 
     this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000, 0.5);
     this.safeContainer.add(this.turretAimLine);
-
-    const roomCodeConfig: InputText.IConfig = {
-      text: `Room Code: ${this.connection.stateId}`,
-      color: "black",
-      fontFamily: "futura",
-      fontSize: "20px",
-      readOnly: true,
-    };
-    const inputText = new InputText(this, GAME_WIDTH - 150, 20, 300, 50, roomCodeConfig);
-    this.add.existing(inputText).setScrollFactor(0);
 
     const role = this.connection.state.playerShip!.role;
     const pointerUpOrOut = () => {
@@ -112,6 +101,8 @@ export class GameScene extends Phaser.Scene {
       }),
       frameRate: 15,
     });
+
+    this.handleResized();
   }
 
   update(): void {
