@@ -179,10 +179,11 @@ export class Impl implements Methods<InternalState> {
 
     // friendly-friendly ship collision
     [...friendlyShips].forEach((friendly1) => {
-      if (friendly1.gunner === undefined) {
+      if (friendly1.lives > 0 && friendly1.gunner === undefined) {
         friendlyShips.forEach((friendly2, idx) => {
           if (
             friendly1.id !== friendly2.id &&
+            friendly2.lives > 0 &&
             friendly2.gunner === undefined &&
             collides(friendly1.location, SHIP_RADIUS, friendly2.location, SHIP_RADIUS)
           ) {
