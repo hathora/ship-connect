@@ -133,14 +133,12 @@ export class GameScene extends Phaser.Scene {
         const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, texture);
         sprite.setScale(0.5);
         this.safeContainer.add(sprite);
-        if (playerShip.id === ship.id) {
-          this.cameras.main.startFollow(sprite);
-        }
         return sprite;
       },
       (shipSprite, ship) => {
         shipSprite.setPosition(ship.location.x, ship.location.y).setRotation(ship.angle);
         if (playerShip.id === ship.id) {
+          this.cameras.main.startFollow(shipSprite);
           if (playerShip.lives <= 0) {
             shipSprite.setAlpha(0.5);
           } else {
