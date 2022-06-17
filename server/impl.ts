@@ -2,26 +2,36 @@ import { Response } from "../api/base";
 import {
   GameState,
   UserId,
-  Point2D,
   IThrustTowardsRequest,
   ISetTurretTargetRequest,
   Role,
   Entity,
   EntityType,
 } from "../api/types";
-import { GameArea, SafeArea } from "../shared/consts";
+import { SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
+import {
+  InternalPlayerShip,
+  InternalEnemyShip,
+  isGameOver,
+  newEnemy,
+  wrap,
+  closestFriendlyShip,
+  isOutOfBounds,
+  collides,
+  distance,
+  ENEMY_FIRE_COOLDOWN,
+  ENEMY_SHIP_SPEED,
+  ENEMY_SPAWN_COOLDOWN,
+  PLAYER_FIRE_COOLDOWN,
+  PLAYER_SHIP_SPEED,
+  PROJECTILE_RADIUS,
+  PROJECTILE_SPEED,
+  SHIP_RADIUS,
+  SHIP_TURN_SPEED,
+} from "./utils";
 
-type InternalPlayerShip = Entity & {
-  navigator: UserId;
-  gunner?: UserId;
-  lives: number;
-  turretAngle: number;
-  fireCooldown: number;
-  target?: Point2D;
-};
-type InternalEnemyShip = Entity & { fireCooldown: number };
 type InternalState = {
   friendlyShips: InternalPlayerShip[];
   enemyShips: InternalEnemyShip[];
@@ -29,16 +39,6 @@ type InternalState = {
   score: number;
   spawnCooldown: number;
 };
-
-const PLAYER_FIRE_COOLDOWN = 1; // seconds
-const ENEMY_FIRE_COOLDOWN = 2; // seconds
-const ENEMY_SPAWN_COOLDOWN = 15; // seconds
-const PLAYER_SHIP_SPEED = 150; // pixels per second
-const ENEMY_SHIP_SPEED = 50; // pixels per second
-const PROJECTILE_SPEED = 400; // pixels per second
-const SHIP_TURN_SPEED = 0.1; // radians per second
-const SHIP_RADIUS = 20; // pixels
-const PROJECTILE_RADIUS = 2; // pixels
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
@@ -243,62 +243,4 @@ export class Impl implements Methods<InternalState> {
           : { ...playerShip, role: playerShip.navigator === userId ? Role.Navigator : Role.Gunner },
     };
   }
-}
-
-function isOutOfBounds(location: Point2D) {
-  return location.x < 0 || location.x > GameArea.width || location.y < 0 || location.y > GameArea.height;
-}
-
-function collides(location1: Point2D, radius1: number, location2: Point2D, radius2: number) {
-  return distance(location1, location2) < radius1 + radius2;
-}
-
-function distance(location1: Point2D, location2: Point2D) {
-  const dx = location2.x - location1.x;
-  const dy = location2.y - location1.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function wrap(value: number, min: number, max: number) {
-  const range = max - min;
-  return min + ((((value - min) % range) + range) % range);
-}
-
-function newEnemy(friendlyShips: InternalPlayerShip[], ctx: Context): InternalEnemyShip {
-  const randomLoc = randomLocation(ctx);
-  const closestShip = closestFriendlyShip(randomLoc, friendlyShips);
-  if (closestShip !== undefined && distance(randomLoc, closestShip.location) < 2 * SHIP_RADIUS) {
-    return newEnemy(friendlyShips, ctx);
-  }
-  return {
-    id: ctx.chance.natural({ max: 1e6 }),
-    type: EntityType.Enemy,
-    location: randomLoc,
-    angle: 0,
-    fireCooldown: ENEMY_FIRE_COOLDOWN,
-  };
-}
-
-function randomLocation(ctx: Context): Point2D {
-  return {
-    x: ctx.chance.natural({ max: GameArea.width }),
-    y: ctx.chance.natural({ max: GameArea.height }),
-  };
-}
-
-function closestFriendlyShip(location: Point2D, friendlyShips: InternalPlayerShip[]): InternalPlayerShip | undefined {
-  let minDist = Number.POSITIVE_INFINITY;
-  let closestShip = undefined;
-  friendlyShips.forEach((ship) => {
-    const dist = distance(ship.location, location);
-    if (ship.lives > 0 && dist < minDist) {
-      minDist = dist;
-      closestShip = ship;
-    }
-  });
-  return closestShip;
-}
-
-function isGameOver(friendlyShips: InternalPlayerShip[]) {
-  return friendlyShips.length > 0 && friendlyShips.every((ship) => ship.lives === 0);
 }
