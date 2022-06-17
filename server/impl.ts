@@ -184,6 +184,10 @@ export class Impl implements Methods<InternalState> {
           if (collides(ship.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)) {
             ship.lives -= 1;
             projectiles.splice(projectileIdx, 1);
+            ctx.sendEvent("hit", ship.navigator);
+            if (ship.gunner !== undefined) {
+              ctx.sendEvent("hit", ship.gunner);
+            }
           }
         });
       } else if (projectile.type === EntityType.Friendly) {
