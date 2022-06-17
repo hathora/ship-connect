@@ -131,12 +131,12 @@ export class Impl implements Methods<InternalState> {
 
     // update enemies
     enemyShips.forEach((enemy) => {
-      const cloestShip = closestFriendlyShip(enemy.location, friendlyShips);
-      if (cloestShip === undefined) {
+      const closestShip = closestFriendlyShip(enemy.location, friendlyShips);
+      if (closestShip === undefined) {
         return;
       }
-      const dx = cloestShip.location.x - enemy.location.x;
-      const dy = cloestShip.location.y - enemy.location.y;
+      const dx = closestShip.location.x - enemy.location.x;
+      const dy = closestShip.location.y - enemy.location.y;
       const targetAngle = Math.atan2(dy, dx);
       const angleDiff = wrap(targetAngle - enemy.angle, -Math.PI, Math.PI);
       if (Math.abs(angleDiff) < SHIP_TURN_SPEED / 2) {
@@ -291,7 +291,7 @@ function closestFriendlyShip(location: Point2D, friendlyShips: InternalPlayerShi
   let closestShip = undefined;
   friendlyShips.forEach((ship) => {
     const dist = distance(ship.location, location);
-    if (dist < minDist) {
+    if (ship.lives > 0 && dist < minDist) {
       minDist = dist;
       closestShip = ship;
     }
