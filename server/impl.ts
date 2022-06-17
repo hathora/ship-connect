@@ -76,7 +76,7 @@ export class Impl implements Methods<InternalState> {
     }
     Object.assign(state, {
       ...this.initialize(),
-      friendlyShips: state.friendlyShips.map((ship) => ({ ...ship, lives: 3 })),
+      friendlyShips: state.friendlyShips.map((ship) => ({ ...ship, target: undefined, lives: 3 })),
     });
     return Response.ok();
   }
