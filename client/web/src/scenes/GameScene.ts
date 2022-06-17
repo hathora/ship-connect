@@ -48,13 +48,9 @@ export class GameScene extends Phaser.Scene {
 
     connection.onUpdate(({ events }) => {
       events.forEach((event) => {
-        // this.cameras.main.shake(300, 0.03);
-        // if (connection.state.playerShip.health <= 0) {
-        //   if (!this.shipSprite) {
-        //     return;
-        //   }
-        //   this.playExplosion(this.shipSprite?.x, this.shipSprite?.y);
-        // }
+        if (event === "hit") {
+          this.cameras.main.shake(300, 0.03);
+        }
       });
     });
 
