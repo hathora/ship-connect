@@ -157,6 +157,8 @@ export class GameScene extends Phaser.Scene {
         shipSprite.setPosition(ship.location.x, ship.location.y).setRotation(ship.angle);
         if (playerShip.id === ship.id && playerShip.lives <= 0) {
           shipSprite.setAlpha(0.5);
+        } else {
+          shipSprite.setAlpha(1);
         }
       },
       (shipSprite) => this.playExplosion(shipSprite.x, shipSprite.y)

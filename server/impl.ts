@@ -74,7 +74,10 @@ export class Impl implements Methods<InternalState> {
     if (!isGameOver(state.friendlyShips)) {
       return Response.error("Game in progress");
     }
-    Object.assign(state, { ...this.initialize(), friendlyShips: state.friendlyShips });
+    Object.assign(state, {
+      ...this.initialize(),
+      friendlyShips: state.friendlyShips.map((ship) => ({ ...ship, lives: 3 })),
+    });
     return Response.ok();
   }
   thrustTowards(state: InternalState, userId: string, ctx: Context, request: IThrustTowardsRequest): Response {

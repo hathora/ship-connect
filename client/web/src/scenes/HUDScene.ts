@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 
+import { Entity, EntityType } from "../../../../api/types";
 import { SafeArea } from "../../../../shared/consts";
 import { Event, eventsCenter } from "../events";
 
@@ -118,7 +119,7 @@ export class HUDScene extends Phaser.Scene {
       return;
     }
 
-    const { playerShip, score } = this.connection.state;
+    const { playerShip, score, ships } = this.connection.state;
 
     if (playerShip === undefined) {
       return;
@@ -136,19 +137,19 @@ export class HUDScene extends Phaser.Scene {
         // score
         this.scoreText.text = `Score: ${score}`;
 
-        if (playerShip.lives <= 0 && !this.gameOverContainer.visible) {
-          // this.state = State.GameOver;
-          // this.finalScoreText.text = score.toLocaleString();
-          // this.gameOverContainer.setVisible(true);
-          // this.gameOverContainer.y += SafeArea.height;
-          // this.gameOverContainer.alpha = 0;
-          // this.tweens.add({
-          //   targets: this.gameOverContainer,
-          //   y: this.scale.height * 0.5,
-          //   alpha: 1,
-          //   ease: Phaser.Math.Easing.Sine.InOut,
-          //   duration: 500,
-          // });
+        if (playerShip.lives <= 0 && numFriendlyShips(ships) === 1 && !this.gameOverContainer.visible) {
+          this.state = State.GameOver;
+          this.finalScoreText.text = score.toLocaleString();
+          this.gameOverContainer.setVisible(true);
+          this.gameOverContainer.y += SafeArea.height;
+          this.gameOverContainer.alpha = 0;
+          this.tweens.add({
+            targets: this.gameOverContainer,
+            y: this.scale.height * 0.5,
+            alpha: 1,
+            ease: Phaser.Math.Easing.Sine.InOut,
+            duration: 500,
+          });
         }
 
         const health = playerShip.lives ?? 0;
@@ -173,4 +174,8 @@ export class HUDScene extends Phaser.Scene {
       }
     }
   }
+}
+
+function numFriendlyShips(ships: Entity[]) {
+  return ships.filter((ship) => ship.type === EntityType.Friendly).length;
 }
