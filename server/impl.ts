@@ -177,6 +177,22 @@ export class Impl implements Methods<InternalState> {
       }
     });
 
+    // friendly-friendly ship collision
+    [...friendlyShips].forEach((friendly1) => {
+      if (friendly1.gunner === undefined) {
+        friendlyShips.forEach((friendly2, idx) => {
+          if (
+            friendly1.id !== friendly2.id &&
+            friendly2.gunner === undefined &&
+            collides(friendly1.location, SHIP_RADIUS, friendly2.location, SHIP_RADIUS)
+          ) {
+            friendly1.gunner = friendly2.navigator;
+            friendlyShips.splice(idx, 1);
+          }
+        });
+      }
+    });
+
     // projectile collisions
     projectiles.forEach((projectile, projectileIdx) => {
       if (projectile.type === EntityType.Enemy) {

@@ -173,6 +173,8 @@ export class HUDScene extends Phaser.Scene {
       return;
     }
 
+    this.roleText.text = roleAsString(playerShip.role);
+
     switch (this.state) {
       case State.GameOver: {
         if (playerShip.lives > 0) {
