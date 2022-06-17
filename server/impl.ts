@@ -54,6 +54,9 @@ export class Impl implements Methods<InternalState> {
     if (state.friendlyShips.some((ship) => ship.navigator === userId || ship.gunner === userId)) {
       return Response.error("Already joined");
     }
+    if (isGameOver(state.friendlyShips)) {
+      return Response.error("Game is over");
+    }
     state.friendlyShips.push({
       id: ctx.chance.natural({ max: 1e6 }),
       type: EntityType.Friendly,
@@ -68,7 +71,7 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
   playAgain(state: InternalState): Response {
-    if (state.friendlyShips.some((ship) => ship.lives > 0)) {
+    if (!isGameOver(state.friendlyShips)) {
       return Response.error("Game in progress");
     }
     Object.assign(state, { ...this.initialize(), friendlyShips: state.friendlyShips });
@@ -94,6 +97,9 @@ export class Impl implements Methods<InternalState> {
   }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
     const { friendlyShips, enemyShips, projectiles } = state;
+    if (isGameOver(friendlyShips)) {
+      return;
+    }
 
     // update friendly ship
     friendlyShips.forEach((ship) => {
@@ -291,4 +297,8 @@ function closestFriendlyShip(location: Point2D, friendlyShips: InternalPlayerShi
     }
   });
   return closestShip;
+}
+
+function isGameOver(friendlyShips: InternalPlayerShip[]) {
+  return friendlyShips.length > 0 && friendlyShips.every((ship) => ship.lives === 0);
 }
