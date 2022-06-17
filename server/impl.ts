@@ -30,8 +30,8 @@ const PROJECTILE_COOLDOWN = 1; // seconds
 const ENEMY_SPAWN_COOLDOWN = 15; // seconds
 const PLAYER_SHIP_SPEED = 150; // pixels per second
 const ENEMY_SHIP_SPEED = 50; // pixels per second
-const PROJECTILE_SPEED = 500; // pixels per second
-const SHIP_TURN_SPEED = 0.05; // radians per second
+const PROJECTILE_SPEED = 400; // pixels per second
+const SHIP_TURN_SPEED = 0.1; // radians per second
 const SHIP_RADIUS = 20; // pixels
 const PROJECTILE_RADIUS = 2; // pixels
 
