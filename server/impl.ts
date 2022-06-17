@@ -237,7 +237,7 @@ export class Impl implements Methods<InternalState> {
     });
     enemyShips.forEach((enemy) => {
       const closestShip = closestFriendlyShip(enemy.location, state.friendlyShips);
-      if (closestShip !== undefined && distance(enemy.location, closestShip.location) < SafeArea.width) {
+      if (closestShip !== undefined && distance(enemy.location, closestShip.location) < SafeArea.height) {
         enemy.fireCooldown -= timeDelta;
         if (enemy.fireCooldown < 0) {
           enemy.fireCooldown += ENEMY_FIRE_COOLDOWN;
