@@ -8,7 +8,7 @@ import {
   Role,
   Entity2D,
 } from "../api/types";
-import { GameArea } from "../shared/consts";
+import { GameArea, SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
 
@@ -29,7 +29,8 @@ type InternalState = {
 
 const PROJECTILE_COOLDOWN = 1; // seconds
 const ENEMY_SPAWN_COOLDOWN = 15; // seconds
-const SHIP_SPEED = 100; // pixels per second
+const PLAYER_SHIP_SPEED = 150; // pixels per second
+const ENEMY_SHIP_SPEED = 50; // pixels per second
 const PROJECTILE_SPEED = 500; // pixels per second
 const SHIP_TURN_SPEED = 0.05; // radians per second
 const SHIP_RADIUS = 20; // pixels
@@ -103,12 +104,12 @@ export class Impl implements Methods<InternalState> {
       }
       turret.angle = ship.angle;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist <= SHIP_SPEED * timeDelta) {
+      if (dist <= PLAYER_SHIP_SPEED * timeDelta) {
         ship.location = { ...ship.target };
         ship.target = undefined;
       } else {
-        ship.location.x += Math.cos(ship.angle) * SHIP_SPEED * timeDelta;
-        ship.location.y += Math.sin(ship.angle) * SHIP_SPEED * timeDelta;
+        ship.location.x += Math.cos(ship.angle) * PLAYER_SHIP_SPEED * timeDelta;
+        ship.location.y += Math.sin(ship.angle) * PLAYER_SHIP_SPEED * timeDelta;
       }
     }
 
@@ -134,8 +135,8 @@ export class Impl implements Methods<InternalState> {
           enemy.angle += SHIP_TURN_SPEED;
         }
       }
-      enemy.location.x += Math.cos(enemy.angle) * SHIP_SPEED * timeDelta;
-      enemy.location.y += Math.sin(enemy.angle) * SHIP_SPEED * timeDelta;
+      enemy.location.x += Math.cos(enemy.angle) * ENEMY_SHIP_SPEED * timeDelta;
+      enemy.location.y += Math.sin(enemy.angle) * ENEMY_SHIP_SPEED * timeDelta;
     });
 
     if (enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, ship.location, SHIP_RADIUS))) {
@@ -190,14 +191,16 @@ export class Impl implements Methods<InternalState> {
         health: 100,
       });
       enemyShips.forEach((enemy) => {
-        projectiles.push({
-          id: ctx.chance.natural({ max: 1e6 }),
-          location: { ...enemy.location },
-          angle: enemy.angle,
-          firedBy: enemy.id,
-          attackPoints: 33,
-          health: 100,
-        });
+        if (distance(enemy.location, ship.location) < SafeArea.width) {
+          projectiles.push({
+            id: ctx.chance.natural({ max: 1e6 }),
+            location: { ...enemy.location },
+            angle: enemy.angle,
+            firedBy: enemy.id,
+            attackPoints: 33,
+            health: 100,
+          });
+        }
       });
     }
 
