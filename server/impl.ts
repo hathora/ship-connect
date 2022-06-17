@@ -37,7 +37,17 @@ const PROJECTILE_RADIUS = 2; // pixels
 
 export class Impl implements Methods<InternalState> {
   initialize(): InternalState {
-    return { players: [], ...initializeState({}) };
+    return {
+      players: [],
+      playerShip: { id: 0, location: { x: 100, y: 100 }, angle: 0, health: 99 },
+      turret: { angle: 0 },
+      enemyShips: [{ id: 1, location: { x: 300, y: 300 }, angle: 0, health: 100 }],
+      projectiles: [],
+      score: 0,
+      gameOver: false,
+      fireCooldown: PROJECTILE_COOLDOWN,
+      spawnCooldown: ENEMY_SPAWN_COOLDOWN,
+    };
   }
   joinGame(state: InternalState, userId: UserId): Response {
     if (state.players.some((player) => player === userId)) {
@@ -50,7 +60,7 @@ export class Impl implements Methods<InternalState> {
     if (!state.gameOver) {
       return Response.error("Game in progress");
     }
-    initializeState(state);
+    Object.assign(state, { ...this.initialize(), players: state.players });
     return Response.ok();
   }
   thrustTowards(state: InternalState, userId: string, ctx: Context, request: IThrustTowardsRequest): Response {
@@ -211,18 +221,6 @@ export class Impl implements Methods<InternalState> {
       role,
     };
   }
-}
-
-function initializeState(state: Partial<InternalState>): Omit<InternalState, "players"> {
-  state.playerShip = { id: 0, location: { x: 100, y: 100 }, angle: 0, health: 99 };
-  state.turret = { angle: 0 };
-  state.enemyShips = [{ id: 1, location: { x: 300, y: 300 }, angle: 0, health: 100 }];
-  state.projectiles = [];
-  state.score = 0;
-  state.gameOver = false;
-  state.fireCooldown = PROJECTILE_COOLDOWN;
-  state.spawnCooldown = ENEMY_SPAWN_COOLDOWN;
-  return state as Omit<InternalState, "players">;
 }
 
 function isOutOfBounds(location: Point2D) {
