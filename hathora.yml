@@ -1,24 +1,30 @@
 types:
+  EntityId: int
   Role:
     - Navigator
     - Gunner
     - Spectator
+  EntityType:
+    - Friendly
+    - Enemy
   Point2D:
     x: float
     y: float
-  Entity2D:
-    id: int
+  Entity:
+    id: EntityId
+    type: EntityType
     location: Point2D
     angle: float
-    health: int
-  GameState:
-    players: UserId[]
-    playerShip: Entity2D
-    turretAngle: float
-    enemyShips: Entity2D[]
-    projectiles: Entity2D[]
-    score: int
+  ShipInfo:
+    id: EntityId
     role: Role
+    turretAngle: float
+    lives: int
+  GameState:
+    ships: Entity[]
+    projectiles: Entity[]
+    score: int
+    playerShip: ShipInfo?
 
 methods:
   joinGame:
@@ -26,7 +32,7 @@ methods:
   thrustTowards:
     location: Point2D?
   setTurretTarget:
-    location: Point2D?
+    location: Point2D
 
 auth:
   anonymous: {}

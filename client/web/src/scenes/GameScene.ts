@@ -1,6 +1,6 @@
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
-import { Role } from "../../../../api/types";
+import { EntityType, Role } from "../../../../api/types";
 import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
@@ -17,11 +17,9 @@ let prevDragLoc = { x: -1, y: -1 };
 export class GameScene extends Phaser.Scene {
   private connection!: HathoraConnection;
 
-  private shipSprite?: Phaser.GameObjects.Image;
-  private shipTurret?: Phaser.GameObjects.Image;
-  private turretAimLine!: Phaser.GameObjects.Line;
-  private enemySprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
+  private shipSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
+  private turretAimLine!: Phaser.GameObjects.Line;
 
   private safeContainer!: Phaser.GameObjects.Container;
 
@@ -46,25 +44,23 @@ export class GameScene extends Phaser.Scene {
   init({ connection }: { connection: HathoraConnection }) {
     this.connection = connection;
 
-    const onPlayerDamage = () => {
-      this.cameras.main.shake(300, 0.03);
-      if (connection.state.playerShip.health <= 0) {
-        if (!this.shipSprite) {
-          return;
-        }
-        this.playExplosion(this.shipSprite?.x, this.shipSprite?.y);
-      }
-    };
-    eventsCenter.on(Event.PlayerDamager, onPlayerDamage);
+    connection.onUpdate(({ events }) => {
+      events.forEach((event) => {
+        // this.cameras.main.shake(300, 0.03);
+        // if (connection.state.playerShip.health <= 0) {
+        //   if (!this.shipSprite) {
+        //     return;
+        //   }
+        //   this.playExplosion(this.shipSprite?.x, this.shipSprite?.y);
+        // }
+      });
+    });
 
-    const winResize = () => {
-      eventsCenter.on(Event.Resized, this.handleResized);
-    };
+    const winResize = () => eventsCenter.on(Event.Resized, this.handleResized);
     window.addEventListener("resize", winResize);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       eventsCenter.off(Event.Resized, this.handleResized);
-      eventsCenter.off(Event.PlayerDamager, onPlayerDamage);
       window.removeEventListener("resize", winResize);
     });
     this.events.once(Phaser.Scenes.Events.DESTROY, () => eventsCenter.removeAllListeners());
@@ -94,15 +90,12 @@ export class GameScene extends Phaser.Scene {
     const inputText = new InputText(this, GAME_WIDTH - 150, 20, 300, 50, roomCodeConfig);
     this.add.existing(inputText).setScrollFactor(0);
 
-    const role = this.connection.state.role;
-
+    const role = this.connection.state.playerShip!.role;
     const pointerUpOrOut = () => {
       if (prevDragLoc.x !== -1 || prevDragLoc.y !== -1) {
         prevDragLoc = { x: -1, y: -1 };
         if (role === Role.Navigator) {
           this.connection?.thrustTowards({ location: undefined });
-        } else if (role === Role.Gunner) {
-          this.connection?.setTurretTarget({ location: undefined });
         }
       }
     };
@@ -125,12 +118,15 @@ export class GameScene extends Phaser.Scene {
     if (this.connection === undefined) {
       return;
     }
-    const { playerShip: ship, enemyShips, projectiles, turretAngle } = this.connection.state;
+    const { playerShip, ships, projectiles } = this.connection.state;
+    if (playerShip === undefined) {
+      return;
+    }
 
     const pointer = this.input.activePointer;
     if (pointer.isDown) {
       // NOTE: need to calc this on update since as camera scrolls, the target position is changing
-      const role = this.connection.state.role;
+      const role = playerShip.role;
       const p = pointer.positionToCamera(this.cameras.main) as Phaser.Math.Vector2;
       const { x, y } = this.safeContainer.pointToContainer(p) as Phaser.Math.Vector2;
       if (x !== prevDragLoc.x || y !== prevDragLoc.y) {
@@ -143,42 +139,21 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // ship
-    if (this.shipSprite === undefined || this.shipTurret === undefined) {
-      this.shipSprite = new Phaser.GameObjects.Image(this, ship.location.x, ship.location.y, "player");
-      this.shipSprite.setScale(0.5);
-      this.safeContainer.add(this.shipSprite);
-      this.shipTurret = this.add.image(ship.location.x, ship.location.y, "turret").setScale(0.6).setOrigin(0.2, 0.5);
-      this.safeContainer.add(this.shipTurret);
-      this.cameras.main.startFollow(this.shipSprite);
-    }
-    this.shipSprite.setRotation(ship.angle);
-    this.shipSprite.setPosition(ship.location.x, ship.location.y);
-
-    // turret
-    this.shipTurret.setPosition(this.shipSprite.x, this.shipSprite.y);
-    this.shipTurret.rotation = turretAngle;
-    this.turretAimLine.setTo(
-      ship.location.x,
-      ship.location.y,
-      ship.location.x + Math.cos(turretAngle) * GAME_WIDTH,
-      ship.location.y + Math.sin(turretAngle) * GAME_WIDTH
-    );
-
-    // enemies
     syncSprites(
-      this.enemySprites,
-      new Map(enemyShips.map((enemy) => [enemy.id, enemy])),
-      (enemy) => {
-        const sprite = new Phaser.GameObjects.Sprite(this, enemy.location.x, enemy.location.y, "enemy");
+      this.shipSprites,
+      new Map(ships.map((ship) => [ship.id, ship])),
+      (ship) => {
+        const texture = ship.type === EntityType.Friendly ? "player" : "enemy";
+        const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, texture);
         sprite.setScale(0.5);
         this.safeContainer.add(sprite);
+        if (playerShip.id === ship.id) {
+          this.cameras.main.startFollow(sprite);
+        }
         return sprite;
       },
-      (enemySprite, enemy) => enemySprite.setPosition(enemy.location.x, enemy.location.y).setRotation(enemy.angle),
-      (enemySprite) => {
-        this.playExplosion(enemySprite.x, enemySprite.y);
-      }
+      (shipSprite, ship) => shipSprite.setPosition(ship.location.x, ship.location.y).setRotation(ship.angle),
+      (shipSprite) => this.playExplosion(shipSprite.x, shipSprite.y)
     );
 
     // projectiles
@@ -189,9 +164,6 @@ export class GameScene extends Phaser.Scene {
         const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
         sprite.setScale(0.5);
         this.safeContainer.add(sprite);
-        if (this.shipTurret !== undefined) {
-          this.safeContainer.moveBelow(sprite, this.shipTurret);
-        }
         return sprite;
       },
       (projectileSprite, projectile) =>

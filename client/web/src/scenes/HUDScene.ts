@@ -120,9 +120,13 @@ export class HUDScene extends Phaser.Scene {
 
     const { playerShip, score } = this.connection.state;
 
+    if (playerShip === undefined) {
+      return;
+    }
+
     switch (this.state) {
       case State.GameOver: {
-        if (playerShip.health > 0) {
+        if (playerShip.lives > 0) {
           this.state = State.Playing;
         }
         return;
@@ -132,26 +136,22 @@ export class HUDScene extends Phaser.Scene {
         // score
         this.scoreText.text = `Score: ${score}`;
 
-        if (playerShip.health <= 0 && !this.gameOverContainer.visible) {
-          this.state = State.GameOver;
-          this.finalScoreText.text = score.toLocaleString();
-          this.gameOverContainer.setVisible(true);
-          this.gameOverContainer.y += SafeArea.height;
-          this.gameOverContainer.alpha = 0;
-          this.tweens.add({
-            targets: this.gameOverContainer,
-            y: this.scale.height * 0.5,
-            alpha: 1,
-            ease: Phaser.Math.Easing.Sine.InOut,
-            duration: 500,
-          });
+        if (playerShip.lives <= 0 && !this.gameOverContainer.visible) {
+          // this.state = State.GameOver;
+          // this.finalScoreText.text = score.toLocaleString();
+          // this.gameOverContainer.setVisible(true);
+          // this.gameOverContainer.y += SafeArea.height;
+          // this.gameOverContainer.alpha = 0;
+          // this.tweens.add({
+          //   targets: this.gameOverContainer,
+          //   y: this.scale.height * 0.5,
+          //   alpha: 1,
+          //   ease: Phaser.Math.Easing.Sine.InOut,
+          //   duration: 500,
+          // });
         }
 
-        if (!playerShip) {
-          return;
-        }
-
-        const health = playerShip.health ?? 0;
+        const health = playerShip.lives ?? 0;
         if (this.lastHealth === health) {
           return;
         }
@@ -161,9 +161,8 @@ export class HUDScene extends Phaser.Scene {
         }
 
         for (let i = 0; i < this.hearts.length; ++i) {
-          const v = (i + 1) * 33;
           const heart = this.hearts[i];
-          if (v <= health) {
+          if (i < health) {
             heart.setTexture("heart-full");
           } else {
             heart.setTexture("heart-empty");
