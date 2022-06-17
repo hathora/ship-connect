@@ -36,12 +36,13 @@ const SHIP_RADIUS = 20; // pixels
 const PROJECTILE_RADIUS = 2; // pixels
 
 export class Impl implements Methods<InternalState> {
-  initialize(): InternalState {
+  initialize(ctx: Context): InternalState {
+    const playerShip = { id: 0, location: { x: 100, y: 100 }, angle: 0, health: 99 };
     return {
       players: [],
-      playerShip: { id: 0, location: { x: 100, y: 100 }, angle: 0, health: 99 },
+      playerShip,
       turret: { angle: 0 },
-      enemyShips: [{ id: 1, location: { x: 300, y: 300 }, angle: 0, health: 100 }],
+      enemyShips: [newEnemy(playerShip, ctx)],
       projectiles: [],
       score: 0,
       gameOver: false,
@@ -56,11 +57,11 @@ export class Impl implements Methods<InternalState> {
     state.players.push(userId);
     return Response.ok();
   }
-  playAgain(state: InternalState): Response {
+  playAgain(state: InternalState, userId: UserId, ctx: Context): Response {
     if (!state.gameOver) {
       return Response.error("Game in progress");
     }
-    Object.assign(state, { ...this.initialize(), players: state.players });
+    Object.assign(state, { ...this.initialize(ctx), players: state.players });
     return Response.ok();
   }
   thrustTowards(state: InternalState, userId: string, ctx: Context, request: IThrustTowardsRequest): Response {
@@ -204,12 +205,7 @@ export class Impl implements Methods<InternalState> {
     state.spawnCooldown -= timeDelta;
     if (state.spawnCooldown < 0) {
       state.spawnCooldown += ENEMY_SPAWN_COOLDOWN;
-      enemyShips.push({
-        id: ctx.chance.natural({ max: 1e6 }),
-        location: newEnemyLocation(ship, ctx),
-        angle: 0,
-        health: 100,
-      });
+      enemyShips.push(newEnemy(ship, ctx));
     }
   }
   getUserState(state: InternalState, userId: UserId): GameState {
@@ -239,12 +235,17 @@ function wrap(value: number, min: number, max: number) {
   return min + ((((value - min) % range) + range) % range);
 }
 
-function newEnemyLocation(playerShip: Entity2D, ctx: Context): Point2D {
+function newEnemy(playerShip: Entity2D, ctx: Context): Entity2D {
   const randomLoc = randomLocation(ctx);
   if (collides(randomLoc, SHIP_RADIUS, playerShip.location, SHIP_RADIUS * 2)) {
-    return newEnemyLocation(playerShip, ctx);
+    return newEnemy(playerShip, ctx);
   }
-  return randomLoc;
+  return {
+    id: ctx.chance.natural({ max: 1e6 }),
+    location: randomLoc,
+    angle: 0,
+    health: 100,
+  };
 }
 
 function randomLocation(ctx: Context) {
