@@ -42,7 +42,7 @@ export class Impl implements Methods<InternalState> {
       players: [],
       playerShip,
       turret: { angle: 0 },
-      enemyShips: [newEnemy(playerShip, ctx)],
+      enemyShips: [newEnemy(playerShip, ctx), newEnemy(playerShip, ctx)],
       projectiles: [],
       score: 0,
       fireCooldown: PROJECTILE_COOLDOWN,
