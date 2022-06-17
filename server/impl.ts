@@ -70,14 +70,13 @@ export class Impl implements Methods<InternalState> {
     state.enemyShips.push(newEnemy(state.friendlyShips, ctx));
     return Response.ok();
   }
-  playAgain(state: InternalState): Response {
+  playAgain(state: InternalState, userId: UserId, ctx: Context): Response {
     if (!isGameOver(state.friendlyShips)) {
       return Response.error("Game in progress");
     }
-    Object.assign(state, {
-      ...this.initialize(),
-      friendlyShips: state.friendlyShips.map((ship) => ({ ...ship, target: undefined, lives: 3 })),
-    });
+    const friendlyShips = state.friendlyShips.map((ship) => ({ ...ship, target: undefined, lives: 3 }));
+    Object.assign(state, { ...this.initialize(), friendlyShips });
+    state.friendlyShips.forEach(() => state.enemyShips.push(newEnemy(state.friendlyShips, ctx)));
     return Response.ok();
   }
   thrustTowards(state: InternalState, userId: string, ctx: Context, request: IThrustTowardsRequest): Response {
