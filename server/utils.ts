@@ -47,7 +47,7 @@ export function wrap(value: number, min: number, max: number) {
 export function newEnemy(friendlyShips: InternalPlayerShip[], ctx: Context): InternalEnemyShip {
   const randomLoc = randomLocation(ctx);
   const closestShip = closestFriendlyShip(randomLoc, friendlyShips);
-  if (closestShip !== undefined && distance(randomLoc, closestShip.location) < 5 * SHIP_RADIUS) {
+  if (closestShip !== undefined && distance(randomLoc, closestShip.location) < 10 * SHIP_RADIUS) {
     return newEnemy(friendlyShips, ctx);
   }
   return {
