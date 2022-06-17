@@ -5,7 +5,8 @@ import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
 import enemyUrl from "../../assets/enemy.png";
-import laserUrl from "../../assets/laser.png";
+import laserBlueUrl from "../../assets/laser-blue.png";
+import laserRedUrl from "../../assets/laser-red.png";
 import playerUrl from "../../assets/player.png";
 import turretUrl from "../../assets/turret.png";
 import { GAME_WIDTH } from "../consts";
@@ -30,7 +31,8 @@ export class GameScene extends Phaser.Scene {
   preload() {
     this.load.image("background", backgroundUrl);
     this.load.image("enemy", enemyUrl);
-    this.load.image("laser", laserUrl);
+    this.load.image("laser-blue", laserBlueUrl);
+    this.load.image("laser-red", laserRedUrl);
     this.load.image("turret", turretUrl);
     this.load.image("player", playerUrl);
 
@@ -169,7 +171,8 @@ export class GameScene extends Phaser.Scene {
       this.projectileSprites,
       new Map(projectiles.map((projectile) => [projectile.id, projectile])),
       (projectile) => {
-        const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, "laser");
+        const texture = projectile.type === EntityType.Friendly ? "laser-blue" : "laser-red";
+        const sprite = new Phaser.GameObjects.Sprite(this, projectile.location.x, projectile.location.y, texture);
         sprite.setScale(0.5);
         this.safeContainer.add(sprite);
         return sprite;
