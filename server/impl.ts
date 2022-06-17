@@ -120,7 +120,9 @@ export class Impl implements Methods<InternalState> {
             ship.angle += SHIP_TURN_SPEED;
           }
         }
-        ship.turretAngle = ship.angle;
+        if (ship.gunner === undefined) {
+          ship.turretAngle = ship.angle;
+        }
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist <= PLAYER_SHIP_SPEED * timeDelta) {
           ship.location = { ...ship.target };
