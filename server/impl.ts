@@ -22,7 +22,6 @@ type InternalState = {
   enemyShips: Entity2D[];
   projectiles: InternalProjectile[];
   score: number;
-  gameOver: boolean;
   fireCooldown: number;
   spawnCooldown: number;
 };
@@ -46,7 +45,6 @@ export class Impl implements Methods<InternalState> {
       enemyShips: [newEnemy(playerShip, ctx)],
       projectiles: [],
       score: 0,
-      gameOver: false,
       fireCooldown: PROJECTILE_COOLDOWN,
       spawnCooldown: ENEMY_SPAWN_COOLDOWN,
     };
@@ -59,7 +57,7 @@ export class Impl implements Methods<InternalState> {
     return Response.ok();
   }
   playAgain(state: InternalState, userId: UserId, ctx: Context): Response {
-    if (!state.gameOver) {
+    if (state.playerShip.health > 0) {
       return Response.error("Game in progress");
     }
     Object.assign(state, { ...this.initialize(ctx), players: state.players });
@@ -83,7 +81,7 @@ export class Impl implements Methods<InternalState> {
   }
   onTick(state: InternalState, ctx: Context, timeDelta: number): void {
     const { playerShip: ship, enemyShips, projectiles, turret } = state;
-    if (state.gameOver) {
+    if (ship.health <= 0) {
       return;
     }
 
@@ -140,7 +138,7 @@ export class Impl implements Methods<InternalState> {
     });
 
     if (enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, ship.location, SHIP_RADIUS))) {
-      state.gameOver = true;
+      ship.health = 0;
     }
 
     // update projectiles
@@ -157,10 +155,6 @@ export class Impl implements Methods<InternalState> {
         // collision with player ship
         projectiles.splice(projectileIdx, 1);
         ship.health -= projectile.attackPoints;
-
-        if (ship.health <= 0) {
-          state.gameOver = true;
-        }
       }
       enemyShips.forEach((enemy, enemyIdx) => {
         if (

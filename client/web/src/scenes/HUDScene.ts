@@ -118,11 +118,11 @@ export class HUDScene extends Phaser.Scene {
       return;
     }
 
-    const { playerShip, score, gameOver } = this.connection.state;
+    const { playerShip, score } = this.connection.state;
 
     switch (this.state) {
       case State.GameOver: {
-        if (!gameOver) {
+        if (playerShip.health > 0) {
           this.state = State.Playing;
         }
         return;
@@ -132,7 +132,7 @@ export class HUDScene extends Phaser.Scene {
         // score
         this.scoreText.text = `Score: ${score}`;
 
-        if (gameOver && !this.gameOverContainer.visible) {
+        if (playerShip.health <= 0 && !this.gameOverContainer.visible) {
           this.state = State.GameOver;
           this.finalScoreText.text = score.toLocaleString();
           this.gameOverContainer.setVisible(true);
