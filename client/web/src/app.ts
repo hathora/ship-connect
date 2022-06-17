@@ -3,7 +3,6 @@ import { Plugin as NineSlicePlugin } from "phaser3-nineslice";
 
 import { GAME_HEIGHT, GAME_WIDTH } from "./consts";
 import { BootScene } from "./scenes/BootScene";
-import { DebugScene } from "./scenes/DebugScene";
 import { GameScene } from "./scenes/GameScene";
 import { HUDScene } from "./scenes/HUDScene";
 import { LobbyScene } from "./scenes/LobbyScene";
@@ -13,11 +12,9 @@ new Phaser.Game({
   type: Phaser.AUTO,
   width: GAME_WIDTH,
   height: GAME_HEIGHT,
-  scene: [BootScene, LobbyScene, GameScene, HUDScene, ResizeScene, DebugScene],
+  scene: [BootScene, LobbyScene, GameScene, HUDScene, ResizeScene],
   parent: "root",
   dom: { createContainer: true },
   scale: { mode: Phaser.Scale.ScaleModes.NONE },
-  plugins: {
-    global: [NineSlicePlugin.DefaultCfg],
-  },
+  plugins: { global: [NineSlicePlugin.DefaultCfg] },
 });

@@ -68,7 +68,6 @@ export class GameScene extends Phaser.Scene {
 
     eventsCenter.on(Event.Resized, this.handleResized);
 
-    // this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("hud-scene", { connection: this.connection });
 
     this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000, 0.5);
