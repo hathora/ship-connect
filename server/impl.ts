@@ -12,21 +12,22 @@ import { GameArea, SafeArea } from "../shared/consts";
 
 import { Methods, Context } from "./.hathora/methods";
 
-type InternalShip = Entity2D & { target?: Point2D };
+type InternalPlayerShip = Entity2D & { fireCooldown: number; target?: Point2D };
+type InternalEnemyShip = Entity2D & { fireCooldown: number };
 type InternalProjectile = Entity2D & { firedBy: number; attackPoints: number };
 type InternalTurret = { angle: number; target?: Point2D };
 type InternalState = {
   players: UserId[];
-  playerShip: InternalShip;
+  playerShip: InternalPlayerShip;
   turret: InternalTurret;
-  enemyShips: Entity2D[];
+  enemyShips: InternalEnemyShip[];
   projectiles: InternalProjectile[];
   score: number;
-  fireCooldown: number;
   spawnCooldown: number;
 };
 
-const PROJECTILE_COOLDOWN = 1; // seconds
+const PLAYER_FIRE_COOLDOWN = 1; // seconds
+const ENEMY_FIRE_COOLDOWN = 2; // seconds
 const ENEMY_SPAWN_COOLDOWN = 15; // seconds
 const PLAYER_SHIP_SPEED = 150; // pixels per second
 const ENEMY_SHIP_SPEED = 50; // pixels per second
@@ -37,7 +38,13 @@ const PROJECTILE_RADIUS = 2; // pixels
 
 export class Impl implements Methods<InternalState> {
   initialize(ctx: Context): InternalState {
-    const playerShip = { id: 0, location: { x: 100, y: 100 }, angle: 0, health: 99 };
+    const playerShip = {
+      id: 0,
+      location: { x: 100, y: 100 },
+      angle: 0,
+      health: 99,
+      fireCooldown: PLAYER_FIRE_COOLDOWN,
+    };
     return {
       players: [],
       playerShip,
@@ -45,7 +52,6 @@ export class Impl implements Methods<InternalState> {
       enemyShips: [newEnemy(playerShip, ctx), newEnemy(playerShip, ctx)],
       projectiles: [],
       score: 0,
-      fireCooldown: PROJECTILE_COOLDOWN,
       spawnCooldown: ENEMY_SPAWN_COOLDOWN,
     };
   }
@@ -174,9 +180,9 @@ export class Impl implements Methods<InternalState> {
     });
 
     // spawn new projectiles on cooldown
-    state.fireCooldown -= timeDelta;
-    if (state.fireCooldown < 0) {
-      state.fireCooldown += PROJECTILE_COOLDOWN;
+    ship.fireCooldown -= timeDelta;
+    if (ship.fireCooldown < 0) {
+      ship.fireCooldown += PLAYER_FIRE_COOLDOWN;
       projectiles.push({
         id: ctx.chance.natural({ max: 1e6 }),
         location: { ...ship.location },
@@ -185,8 +191,12 @@ export class Impl implements Methods<InternalState> {
         attackPoints: 100,
         health: 100,
       });
-      enemyShips.forEach((enemy) => {
-        if (distance(enemy.location, ship.location) < SafeArea.width) {
+    }
+    enemyShips.forEach((enemy) => {
+      if (distance(enemy.location, ship.location) < SafeArea.width) {
+        enemy.fireCooldown -= timeDelta;
+        if (enemy.fireCooldown < 0) {
+          enemy.fireCooldown += ENEMY_FIRE_COOLDOWN;
           projectiles.push({
             id: ctx.chance.natural({ max: 1e6 }),
             location: { ...enemy.location },
@@ -196,8 +206,8 @@ export class Impl implements Methods<InternalState> {
             health: 100,
           });
         }
-      });
-    }
+      }
+    });
 
     // spawn new enemies on cooldown
     state.spawnCooldown -= timeDelta;
@@ -236,7 +246,7 @@ function wrap(value: number, min: number, max: number) {
   return min + ((((value - min) % range) + range) % range);
 }
 
-function newEnemy(playerShip: Entity2D, ctx: Context): Entity2D {
+function newEnemy(playerShip: Entity2D, ctx: Context): InternalEnemyShip {
   const randomLoc = randomLocation(ctx);
   if (collides(randomLoc, SHIP_RADIUS, playerShip.location, SHIP_RADIUS * 2)) {
     return newEnemy(playerShip, ctx);
@@ -246,6 +256,7 @@ function newEnemy(playerShip: Entity2D, ctx: Context): Entity2D {
     location: randomLoc,
     angle: 0,
     health: 100,
+    fireCooldown: ENEMY_FIRE_COOLDOWN,
   };
 }
 
