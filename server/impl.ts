@@ -19,7 +19,7 @@ type InternalState = {
   players: UserId[];
   playerShip: InternalShip;
   turret: InternalTurret;
-  enemyShips: InternalShip[];
+  enemyShips: Entity2D[];
   projectiles: InternalProjectile[];
   score: number;
   gameOver: boolean;
@@ -121,21 +121,21 @@ export class Impl implements Methods<InternalState> {
 
     // update enemies
     enemyShips.forEach((enemy) => {
-      if (enemy.target === undefined) {
-        enemy.target = randomLocation(ctx);
-      }
-      const dx = enemy.target.x - enemy.location.x;
-      const dy = enemy.target.y - enemy.location.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const pixelsToMove = SHIP_SPEED * timeDelta;
-      if (dist <= pixelsToMove) {
-        enemy.location = { ...enemy.target };
-        enemy.target = undefined;
+      const dx = ship.location.x - enemy.location.x;
+      const dy = ship.location.y - enemy.location.y;
+      const targetAngle = Math.atan2(dy, dx);
+      const angleDiff = wrap(targetAngle - enemy.angle, -Math.PI, Math.PI);
+      if (Math.abs(angleDiff) < SHIP_TURN_SPEED / 2) {
+        enemy.angle = targetAngle;
       } else {
-        enemy.location.x += (dx / dist) * pixelsToMove;
-        enemy.location.y += (dy / dist) * pixelsToMove;
+        if (angleDiff < 0) {
+          enemy.angle -= SHIP_TURN_SPEED;
+        } else {
+          enemy.angle += SHIP_TURN_SPEED;
+        }
       }
-      enemy.angle = Math.atan2(dy, dx);
+      enemy.location.x += Math.cos(enemy.angle) * SHIP_SPEED * timeDelta;
+      enemy.location.y += Math.sin(enemy.angle) * SHIP_SPEED * timeDelta;
     });
 
     if (enemyShips.some((enemy) => collides(enemy.location, SHIP_RADIUS, ship.location, SHIP_RADIUS))) {
@@ -224,10 +224,13 @@ function isOutOfBounds(location: Point2D) {
 }
 
 function collides(location1: Point2D, radius1: number, location2: Point2D, radius2: number) {
+  return distance(location1, location2) < radius1 + radius2;
+}
+
+function distance(location1: Point2D, location2: Point2D) {
   const dx = location2.x - location1.x;
   const dy = location2.y - location1.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  return dist < radius1 + radius2;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
 function wrap(value: number, min: number, max: number) {
