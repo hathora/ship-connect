@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import InputText from "phaser3-rex-plugins/plugins/inputtext";
 
-import { Entity, EntityType } from "../../../../api/types";
+import { Entity, EntityType, Role } from "../../../../api/types";
 import { SafeArea } from "../../../../shared/consts";
 import { Event, eventsCenter } from "../events";
 
@@ -13,6 +13,18 @@ enum State {
   Restarting,
 }
 
+function roleAsString(role?: Role) {
+  switch (role) {
+    case Role.Gunner:
+      return "Gunner";
+    case Role.Navigator:
+      return "Navigator";
+    default:
+    case Role.Spectator:
+      return "Spectator";
+  }
+}
+
 export class HUDScene extends Phaser.Scene {
   private connection!: HathoraConnection;
 
@@ -21,6 +33,8 @@ export class HUDScene extends Phaser.Scene {
 
   private gameOverContainer!: Phaser.GameObjects.Container;
   private finalScoreText!: Phaser.GameObjects.Text;
+
+  private roleText!: Phaser.GameObjects.Text;
 
   private lastHealth = 0;
 
@@ -32,6 +46,7 @@ export class HUDScene extends Phaser.Scene {
 
   create({ connection }: { connection: HathoraConnection }) {
     this.connection = connection;
+    const { width, height } = this.scale;
 
     this.hearts.push(
       this.add.image(20, 20, "heart-full").setScale(0.5),
@@ -40,12 +55,20 @@ export class HUDScene extends Phaser.Scene {
     );
 
     this.scoreText = this.add
-      .text(this.scale.width - 20, 20, "Score: 0", { color: "white", fontFamily: "futura", fontSize: "20px" })
+      .text(width - 20, 20, "Score: 0", { color: "white", fontFamily: "futura", fontSize: "20px" })
       .setOrigin(1, 0.5)
       .setAlign("right")
       .setStroke("black", 4);
 
-    const { width, height } = this.scale;
+    this.roleText = this.add
+      .text(width * 0.5, 25, roleAsString(this.connection.state.playerShip?.role), {
+        color: "#fca050",
+        fontFamily: "futura",
+        fontSize: "20px",
+      })
+      .setOrigin(0.5)
+      .setStroke("black", 4);
+
     this.gameOverContainer = this.add.container(width * 0.5, height * 0.5);
     this.gameOverContainer.setVisible(false);
 
@@ -125,12 +148,16 @@ export class HUDScene extends Phaser.Scene {
     const inputText = new InputText(this, width * 0.5, height - 40, 300, 50, roomCodeConfig).setOrigin(0.5);
     inputText.setStyle("cursor", "pointer");
     inputText.on("click", async () => {
-      await navigator.clipboard.writeText(this.connection.stateId);
-      const old = inputText.text;
-      inputText.setText("Room Code: COPIED!");
-      this.time.delayedCall(1000, () => {
-        inputText.setText(old);
-      });
+      try {
+        await navigator.clipboard.writeText(this.connection.stateId);
+        const old = inputText.text;
+        inputText.setText("Room Code: COPIED!");
+        this.time.delayedCall(1000, () => {
+          inputText.setText(old);
+        });
+      } catch (_err) {
+        /** */
+      }
     });
     this.add.existing(inputText);
   }
@@ -189,6 +216,8 @@ export class HUDScene extends Phaser.Scene {
           } else {
             heart.setTexture("heart-empty");
           }
+
+          heart.setVisible(playerShip.role !== Role.Spectator);
         }
 
         this.lastHealth = health;
