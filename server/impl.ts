@@ -166,6 +166,7 @@ export class Impl implements Methods<InternalState> {
           enemy.health -= projectile.attackPoints;
           if (enemy.health <= 0) {
             enemyShips.splice(enemyIdx, 1);
+            enemyShips.push(newEnemy(ship, ctx));
             state.score++;
           }
         }
