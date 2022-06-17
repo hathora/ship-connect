@@ -140,10 +140,18 @@ export class GameScene extends Phaser.Scene {
       },
       (shipSprite, ship) => {
         shipSprite.setPosition(ship.location.x, ship.location.y).setRotation(ship.angle);
-        if (playerShip.id === ship.id && playerShip.lives <= 0) {
-          shipSprite.setAlpha(0.5);
-        } else {
-          shipSprite.setAlpha(1);
+        if (playerShip.id === ship.id) {
+          if (playerShip.lives <= 0) {
+            shipSprite.setAlpha(0.5);
+          } else {
+            shipSprite.setAlpha(1);
+          }
+          this.turretAimLine.setTo(
+            ship.location.x,
+            ship.location.y,
+            ship.location.x + Math.cos(playerShip.turretAngle) * GameArea.height,
+            ship.location.y + Math.sin(playerShip.turretAngle) * GameArea.height
+          );
         }
       },
       (shipSprite) => this.playExplosion(shipSprite.x, shipSprite.y)
