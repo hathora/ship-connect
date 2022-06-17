@@ -67,13 +67,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.add.tileSprite(0, 0, GameArea.width, GameArea.height * 2, "background").setOrigin(0, 0);
+    this.add.tileSprite(0, 0, GameArea.width * 2, GameArea.height, "background").setOrigin(0, 0);
 
     this.safeContainer = this.add.container();
 
     eventsCenter.on(Event.Resized, this.handleResized);
 
-    this.scene.run("debug-scene", { safeContainer: this.safeContainer });
+    // this.scene.run("debug-scene", { safeContainer: this.safeContainer });
     this.scene.run("resize-scene");
     this.scene.run("hud-scene", { connection: this.connection });
 
@@ -190,12 +190,12 @@ export class GameScene extends Phaser.Scene {
 
   private handleResized = () => {
     if (this.safeContainer !== undefined) {
-      const { height } = this.scale;
-      this.safeContainer.x = 0;
-      this.safeContainer.y = (height - SafeArea.height) * 0.5;
+      const { width } = this.scale;
+      this.safeContainer.x = (width - SafeArea.width) * 0.5;
+      this.safeContainer.y = 0;
 
-      this.cameras.main.setFollowOffset(0, -this.safeContainer.y);
-      this.cameras.main.setBounds(0, 0, GameArea.width, height);
+      this.cameras.main.setFollowOffset(-this.safeContainer.x, -this.safeContainer.y);
+      this.cameras.main.setBounds(0, 0, width, GameArea.height);
     }
   };
 }

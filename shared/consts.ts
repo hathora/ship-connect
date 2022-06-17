@@ -4,6 +4,6 @@ export const SafeArea = {
 };
 
 export const GameArea = {
-  width: 3000,
-  height: 500,
+  width: 375,
+  height: 3000,
 };

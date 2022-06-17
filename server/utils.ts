@@ -24,7 +24,9 @@ export const SHIP_RADIUS = 20; // pixels
 export const PROJECTILE_RADIUS = 2; // pixels
 
 export function isOutOfBounds(location: Point2D) {
-  return location.x < 0 || location.x > GameArea.width || location.y < 0 || location.y > GameArea.height;
+  return (
+    location.x < -GameArea.width || location.x > GameArea.width * 2 || location.y < 0 || location.y > GameArea.height
+  );
 }
 
 export function collides(location1: Point2D, radius1: number, location2: Point2D, radius2: number) {
