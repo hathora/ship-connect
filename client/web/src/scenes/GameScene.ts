@@ -139,6 +139,7 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // ships
     syncSprites(
       this.shipSprites,
       new Map(ships.map((ship) => [ship.id, ship])),
@@ -152,7 +153,12 @@ export class GameScene extends Phaser.Scene {
         }
         return sprite;
       },
-      (shipSprite, ship) => shipSprite.setPosition(ship.location.x, ship.location.y).setRotation(ship.angle),
+      (shipSprite, ship) => {
+        shipSprite.setPosition(ship.location.x, ship.location.y).setRotation(ship.angle);
+        if (playerShip.id === ship.id && playerShip.lives <= 0) {
+          shipSprite.setAlpha(0.5);
+        }
+      },
       (shipSprite) => this.playExplosion(shipSprite.x, shipSprite.y)
     );
 

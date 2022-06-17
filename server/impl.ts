@@ -163,13 +163,15 @@ export class Impl implements Methods<InternalState> {
 
     // friendly-enemy ship collisions
     friendlyShips.forEach((friendly) => {
-      enemyShips.forEach((enemy, enemyIdx) => {
-        if (collides(friendly.location, SHIP_RADIUS, enemy.location, SHIP_RADIUS)) {
-          friendly.lives = 0;
-          state.score++;
-          enemyShips.splice(enemyIdx, 1);
-        }
-      });
+      if (friendly.lives > 0) {
+        enemyShips.forEach((enemy, enemyIdx) => {
+          if (collides(friendly.location, SHIP_RADIUS, enemy.location, SHIP_RADIUS)) {
+            friendly.lives = 0;
+            state.score++;
+            enemyShips.splice(enemyIdx, 1);
+          }
+        });
+      }
     });
 
     // projectile collisions
@@ -194,15 +196,17 @@ export class Impl implements Methods<InternalState> {
 
     // spawn new projectiles on cooldown
     friendlyShips.forEach((ship) => {
-      ship.fireCooldown -= timeDelta;
-      if (ship.fireCooldown < 0) {
-        ship.fireCooldown += PLAYER_FIRE_COOLDOWN;
-        projectiles.push({
-          id: ctx.chance.natural({ max: 1e6 }),
-          type: EntityType.Friendly,
-          location: { ...ship.location },
-          angle: ship.turretAngle,
-        });
+      if (ship.lives > 0) {
+        ship.fireCooldown -= timeDelta;
+        if (ship.fireCooldown < 0) {
+          ship.fireCooldown += PLAYER_FIRE_COOLDOWN;
+          projectiles.push({
+            id: ctx.chance.natural({ max: 1e6 }),
+            type: EntityType.Friendly,
+            location: { ...ship.location },
+            angle: ship.turretAngle,
+          });
+        }
       }
     });
     enemyShips.forEach((enemy) => {
@@ -231,7 +235,11 @@ export class Impl implements Methods<InternalState> {
   getUserState(state: InternalState, userId: UserId): GameState {
     const playerShip = state.friendlyShips.find((ship) => ship.navigator === userId || ship.gunner === userId);
     const ships: Entity[] = [];
-    state.friendlyShips.forEach((ship) => ships.push(ship));
+    state.friendlyShips.forEach((ship) => {
+      if (ship.lives > 0 || ship.id === playerShip?.id) {
+        ships.push(ship);
+      }
+    });
     state.enemyShips.forEach((ship) => ships.push(ship));
     return {
       ships,
