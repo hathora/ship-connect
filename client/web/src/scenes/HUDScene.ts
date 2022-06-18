@@ -200,6 +200,8 @@ export class HUDScene extends Phaser.Scene {
             ease: Phaser.Math.Easing.Sine.InOut,
             duration: 500,
           });
+        } else {
+          this.gameOverContainer.alpha = 0;
         }
 
         const health = playerShip.lives ?? 0;
