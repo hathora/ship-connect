@@ -72,7 +72,7 @@ export class Impl implements Methods<InternalState> {
       return Response.error("Game in progress");
     }
     const friendlyShips = state.friendlyShips.map((ship) => ({ ...ship, target: undefined, lives: 3 }));
-    Object.assign(state, { ...this.initialize(), friendlyShips });
+    Object.assign(state, Object.assign(this.initialize(), { friendlyShips }));
     state.friendlyShips.forEach(() => state.enemyShips.push(newEnemy(state.friendlyShips, ctx)));
     return Response.ok();
   }
