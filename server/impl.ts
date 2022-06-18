@@ -229,6 +229,10 @@ export class Impl implements Methods<InternalState> {
             location: { ...ship.location },
             angle: ship.turretAngle,
           });
+          ctx.sendEvent("fire", ship.navigator);
+          if (ship.gunner !== undefined) {
+            ctx.sendEvent("fire", ship.gunner);
+          }
         }
       }
     });

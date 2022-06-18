@@ -5,6 +5,7 @@ import backgroundUrl from "../../assets/background.png";
 import enemyUrl from "../../assets/enemy.png";
 import laserBlueUrl from "../../assets/laser-blue.png";
 import laserRedUrl from "../../assets/laser-red.png";
+import laserSoundUrl from "../../assets/laser.ogg";
 import playerUrl from "../../assets/player.png";
 import turretUrl from "../../assets/turret.png";
 import { Event, eventsCenter } from "../events";
@@ -33,12 +34,14 @@ export class GameScene extends Phaser.Scene {
     this.load.image("laser-red", laserRedUrl);
     this.load.image("turret", turretUrl);
     this.load.image("player", playerUrl);
-
-    this.load.atlas("explosion", "assets/explosion.png", "assets/explosion.json");
     this.load.image("heart-full", "assets/hud_heartFull.png");
     this.load.image("heart-empty", "assets/hud_heartEmpty.png");
     this.load.image("panel", "assets/grey_panel.png");
     this.load.image("button", "assets/green_button03.png");
+
+    this.load.atlas("explosion", "assets/explosion.png", "assets/explosion.json");
+
+    this.load.audio("laser", laserSoundUrl);
   }
 
   init({ connection }: { connection: HathoraConnection }) {
@@ -48,6 +51,8 @@ export class GameScene extends Phaser.Scene {
       events.forEach((event) => {
         if (event === "hit") {
           this.cameras.main.shake(300, 0.03);
+        } else if (event === "fire") {
+          this.sound.play("laser");
         }
       });
     });
