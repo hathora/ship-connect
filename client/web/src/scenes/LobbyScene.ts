@@ -10,6 +10,15 @@ export class LobbyScene extends Phaser.Scene {
   create() {
     const client = new HathoraClient();
 
+    if (window.top !== null) {
+      const params = new URLSearchParams(window.top.location.search);
+      const stateId = params.get("roomId");
+      if (stateId !== null) {
+        getToken(client).then((token) => this.scene.start("loading", { client, token, stateId }));
+        return;
+      }
+    }
+
     const { width, height } = this.scale;
     const createButton = this.add
       .text(width / 2, height / 4, "Create New Game", {
@@ -24,16 +33,9 @@ export class LobbyScene extends Phaser.Scene {
       .on("pointerover", () => createButton.setStyle({ fill: "#f39c12" }))
       .on("pointerout", () => createButton.setStyle({ fill: "#FFF" }))
       .on("pointerdown", async () => {
-        if (sessionStorage.getItem("token") === null) {
-          const newToken = await client.loginAnonymous();
-          sessionStorage.setItem("token", newToken);
-        }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const token = sessionStorage.getItem("token")!;
+        const token = await getToken(client);
         const stateId = await client.create(token, {});
-        const connection = await client.connect(token, stateId);
-        await connection.joinGame({});
-        this.scene.start("game", { connection });
+        this.scene.start("loading", { client, token, stateId });
       });
 
     const joinButton = this.add
@@ -49,20 +51,13 @@ export class LobbyScene extends Phaser.Scene {
       .on("pointerover", () => joinButton.setStyle({ fill: "#f39c12" }))
       .on("pointerout", () => joinButton.setStyle({ fill: "#FFF" }))
       .on("pointerdown", async () => {
+        const token = await getToken(client);
         const stateId = inputText.text?.trim();
         if (stateId === undefined || stateId === "") {
           alert("Please enter an existing room code or create a new game!");
           return;
         }
-        if (sessionStorage.getItem("token") === null) {
-          const newToken = await client.loginAnonymous();
-          sessionStorage.setItem("token", newToken);
-        }
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const token = sessionStorage.getItem("token")!;
-        const connection = await client.connect(token, stateId);
-        await connection.joinGame({});
-        this.scene.start("game", { connection });
+        this.scene.start("loading", { client, token, stateId });
       });
 
     const inputTextConfig: InputText.IConfig = {
@@ -77,4 +72,13 @@ export class LobbyScene extends Phaser.Scene {
     const inputText = new InputText(this, joinButton.x, joinButton.y - 40, 100, 30, inputTextConfig);
     this.add.existing(inputText);
   }
+}
+
+async function getToken(client: HathoraClient) {
+  if (sessionStorage.getItem("token") === null) {
+    const newToken = await client.loginAnonymous();
+    sessionStorage.setItem("token", newToken);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return sessionStorage.getItem("token")!;
 }
