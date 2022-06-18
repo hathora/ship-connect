@@ -149,6 +149,7 @@ export class GameScene extends Phaser.Scene {
             this.shipTurret.setAlpha(0.5);
           } else {
             shipSprite.setAlpha(1);
+            this.shipTurret.setAlpha(1);
           }
           this.shipTurret.setPosition(ship.location.x, ship.location.y);
           this.shipTurret.rotation = playerShip.turretAngle;
