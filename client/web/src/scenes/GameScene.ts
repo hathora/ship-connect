@@ -3,6 +3,8 @@ import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
 import enemyUrl from "../../assets/enemy.png";
+import explosionSoundUrl from "../../assets/explosion.mp3";
+import hitSoundUrl from "../../assets/hit.mp3";
 import laserBlueUrl from "../../assets/laser-blue.png";
 import laserRedUrl from "../../assets/laser-red.png";
 import laserSoundUrl from "../../assets/laser.ogg";
@@ -42,6 +44,8 @@ export class GameScene extends Phaser.Scene {
     this.load.atlas("explosion", "assets/explosion.png", "assets/explosion.json");
 
     this.load.audio("laser", laserSoundUrl);
+    this.load.audio("explosion", explosionSoundUrl);
+    this.load.audio("hit", hitSoundUrl);
   }
 
   init({ connection }: { connection: HathoraConnection }) {
@@ -50,9 +54,12 @@ export class GameScene extends Phaser.Scene {
     connection.onUpdate(({ events }) => {
       events.forEach((event) => {
         if (event === "hit") {
+          this.sound.play("hit");
           this.cameras.main.shake(300, 0.03);
         } else if (event === "fire") {
           this.sound.play("laser");
+        } else if (event === "explosion") {
+          this.sound.play("explosion");
         }
       });
     });

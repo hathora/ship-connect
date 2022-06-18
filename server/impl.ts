@@ -170,6 +170,7 @@ export class Impl implements Methods<InternalState> {
             friendly.lives = 0;
             state.score++;
             enemyShips.splice(enemyIdx, 1);
+            ctx.broadcastEvent("explosion");
           }
         });
       }
@@ -212,6 +213,7 @@ export class Impl implements Methods<InternalState> {
             enemyShips.splice(enemyIdx, 1);
             projectiles.splice(projectileIdx, 1);
             enemyShips.push(newEnemy(friendlyShips, ctx));
+            ctx.broadcastEvent("explosion");
           }
         });
       }
