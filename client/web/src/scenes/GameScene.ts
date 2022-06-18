@@ -17,6 +17,7 @@ export class GameScene extends Phaser.Scene {
 
   private shipSprites: Map<number, Phaser.GameObjects.Sprite> = new Map();
   private projectileSprites: Map<number, Phaser.GameObjects.Image> = new Map();
+  private shipTurret!: Phaser.GameObjects.Image;
   private turretAimLine!: Phaser.GameObjects.Line;
 
   private safeContainer!: Phaser.GameObjects.Container;
@@ -69,6 +70,9 @@ export class GameScene extends Phaser.Scene {
     eventsCenter.on(Event.Resized, this.handleResized);
 
     this.scene.run("hud-scene", { connection: this.connection });
+
+    this.shipTurret = new Phaser.GameObjects.Image(this, 0, 0, "turret").setScale(0.6).setOrigin(0.2, 0.5);
+    this.safeContainer.add(this.shipTurret);
 
     this.turretAimLine = new Phaser.GameObjects.Line(this, 0, 0, 0, 0, 0, 0, 0xff0000, 0.5);
     this.safeContainer.add(this.turretAimLine);
@@ -133,6 +137,7 @@ export class GameScene extends Phaser.Scene {
         const sprite = new Phaser.GameObjects.Sprite(this, ship.location.x, ship.location.y, texture);
         sprite.setScale(0.5);
         this.safeContainer.add(sprite);
+        this.safeContainer.moveBelow(sprite, this.shipTurret);
         return sprite;
       },
       (shipSprite, ship) => {
@@ -141,9 +146,12 @@ export class GameScene extends Phaser.Scene {
           this.cameras.main.startFollow(shipSprite);
           if (playerShip.lives <= 0) {
             shipSprite.setAlpha(0.5);
+            this.shipTurret.setAlpha(0.5);
           } else {
             shipSprite.setAlpha(1);
           }
+          this.shipTurret.setPosition(ship.location.x, ship.location.y);
+          this.shipTurret.rotation = playerShip.turretAngle;
           this.turretAimLine.setTo(
             ship.location.x,
             ship.location.y,
