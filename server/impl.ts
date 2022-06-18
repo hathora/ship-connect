@@ -54,16 +54,13 @@ export class Impl implements Methods<InternalState> {
     if (state.friendlyShips.some((ship) => ship.navigator === userId || ship.gunner === userId)) {
       return Response.error("Already joined");
     }
-    if (isGameOver(state.friendlyShips)) {
-      return Response.error("Game is over");
-    }
     state.friendlyShips.push({
       id: ctx.chance.natural({ max: 1e6 }),
       type: EntityType.Friendly,
       location: { x: 100, y: 100 },
       angle: 0,
       navigator: userId,
-      lives: 3,
+      lives: isGameOver(state.friendlyShips) ? 0 : 3,
       turretAngle: 0,
       fireCooldown: PLAYER_FIRE_COOLDOWN,
     });
