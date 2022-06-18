@@ -10,9 +10,11 @@ export class LobbyScene extends Phaser.Scene {
   create() {
     const client = new HathoraClient();
 
-    if (window.top !== null) {
-      const params = new URLSearchParams(window.top.location.search);
-      const stateId = params.get("roomId");
+    const url = window.location === window.parent.location ? document.location.href : document.referrer;
+    if (url.includes("?")) {
+      const queryString = url.split("?")[1];
+      const queryParams = new URLSearchParams(queryString);
+      const stateId = queryParams.get("roomId");
       if (stateId !== null) {
         getToken(client).then((token) => this.scene.start("loading", { client, token, stateId }));
         return;

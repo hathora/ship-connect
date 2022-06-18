@@ -24,12 +24,6 @@ export class LoadingScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    if (window.top !== null) {
-      const params = new URLSearchParams(window.top.location.search);
-      params.set("roomId", this.stateId);
-      window.top.history.pushState({}, "", decodeURIComponent(`${window.location.pathname}?${params}`));
-    }
-
     this.client
       .connect(this.token, this.stateId)
       .then((connection) => connection.joinGame({}).then(() => this.scene.start("game", { connection })));
