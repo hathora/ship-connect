@@ -26,6 +26,11 @@ types:
     score: int
     playerShip: ShipInfo?
 
+events:
+  explosion: string
+  hit: string
+  fire: string
+
 methods:
   joinGame:
   playAgain:

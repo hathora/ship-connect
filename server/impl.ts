@@ -7,6 +7,7 @@ import {
   Role,
   Entity,
   EntityType,
+  HathoraEventTypes,
 } from "../api/types";
 import { SafeArea } from "../shared/consts";
 
@@ -170,7 +171,7 @@ export class Impl implements Methods<InternalState> {
             friendly.lives = 0;
             state.score++;
             enemyShips.splice(enemyIdx, 1);
-            ctx.broadcastEvent("explosion");
+            ctx.broadcastEvent(HathoraEventTypes.explosion, "");
           }
         });
       }
@@ -200,9 +201,9 @@ export class Impl implements Methods<InternalState> {
           if (collides(ship.location, SHIP_RADIUS, projectile.location, PROJECTILE_RADIUS)) {
             ship.lives -= 1;
             projectiles.splice(projectileIdx, 1);
-            ctx.sendEvent("hit", ship.navigator);
+            ctx.sendEvent(HathoraEventTypes.hit, "", ship.navigator);
             if (ship.gunner !== undefined) {
-              ctx.sendEvent("hit", ship.gunner);
+              ctx.sendEvent(HathoraEventTypes.hit, "", ship.gunner);
             }
           }
         });
@@ -213,7 +214,7 @@ export class Impl implements Methods<InternalState> {
             enemyShips.splice(enemyIdx, 1);
             projectiles.splice(projectileIdx, 1);
             enemyShips.push(newEnemy(friendlyShips, ctx));
-            ctx.broadcastEvent("explosion");
+            ctx.broadcastEvent(HathoraEventTypes.explosion, "");
           }
         });
       }
@@ -231,9 +232,9 @@ export class Impl implements Methods<InternalState> {
             location: { ...ship.location },
             angle: ship.turretAngle,
           });
-          ctx.sendEvent("fire", ship.navigator);
+          ctx.sendEvent(HathoraEventTypes.fire, "", ship.navigator);
           if (ship.gunner !== undefined) {
-            ctx.sendEvent("fire", ship.gunner);
+            ctx.sendEvent(HathoraEventTypes.fire, "", ship.gunner);
           }
         }
       }

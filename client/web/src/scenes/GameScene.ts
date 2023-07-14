@@ -1,4 +1,4 @@
-import { EntityType, Role } from "../../../../api/types";
+import { EntityType, HathoraEventTypes, Role } from "../../../../api/types";
 import { GameArea, SafeArea } from "../../../../shared/consts";
 import { HathoraConnection } from "../../../.hathora/client";
 import backgroundUrl from "../../assets/background.png";
@@ -53,12 +53,12 @@ export class GameScene extends Phaser.Scene {
 
     connection.onUpdate(({ events }) => {
       events.forEach((event) => {
-        if (event === "hit") {
+        if (event.type === HathoraEventTypes.hit) {
           this.sound.play("hit");
           this.cameras.main.shake(300, 0.03);
-        } else if (event === "fire") {
+        } else if (event.type === HathoraEventTypes.fire) {
           this.sound.play("laser");
-        } else if (event === "explosion") {
+        } else if (event.type === HathoraEventTypes.explosion) {
           this.sound.play("explosion");
         }
       });
